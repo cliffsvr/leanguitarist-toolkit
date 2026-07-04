@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#d30e0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CCF Toolkit">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Core Chord Formula Toolkit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --red:#d30e0f; --blue:#003c98; --green:#048c0d;
+  --ink:#141414; --paper:#ffffff; --bg:#f4f2ef;
+  --line:#e3ddd6; --muted:#6b6258; --soft:#fbf9f6;
+  --serif:"DM Serif Display", Georgia, "Times New Roman", serif;
+  --sans:"Open Sans", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font-family:var(--sans); color:var(--ink); background:var(--bg);
+  padding-bottom:calc(76px + env(safe-area-inset-bottom));
+  -webkit-text-size-adjust:100%;
+}
+h1,h2,h3{font-family:var(--serif); font-weight:400; line-height:1.1; margin:0}
+a{color:var(--blue)}
+button{font-family:var(--sans); cursor:pointer}
+
+/* Header */
+header{
+  position:sticky; top:0; z-index:30; background:var(--red); color:#fff;
+  padding:calc(10px + env(safe-area-inset-top)) 16px 10px;
+  box-shadow:0 2px 10px rgba(0,0,0,.12);
+}
+header .wrap{max-width:760px;margin:0 auto;display:flex;align-items:center;gap:10px}
+header .logo{width:34px;height:34px;border-radius:8px;background:#fff;color:var(--red);
+  display:grid;place-items:center;font-family:var(--serif);font-size:22px;flex:0 0 auto}
+header h1{font-size:20px;color:#fff}
+header p{margin:1px 0 0;font-size:11.5px;opacity:.9;letter-spacing:.02em}
+
+main{max-width:760px;margin:0 auto;padding:16px}
+.tab{display:none;animation:fade .25s ease}
+.tab.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+.tabhead{margin:2px 0 14px}
+.tabhead h2{font-size:27px;color:var(--ink)}
+.tabhead .k{color:var(--red);font-family:var(--sans);font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.tabhead p{margin:6px 0 0;color:var(--muted);font-size:14px;line-height:1.5}
+
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px;
+  box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.pill{display:inline-block;border:1px solid var(--line);background:var(--soft);border-radius:999px;
+  padding:5px 11px;font-size:12.5px;font-weight:600;color:var(--ink)}
+.chordbadge{display:inline-grid;place-items:center;min-width:26px;height:26px;padding:0 7px;border-radius:7px;
+  background:#fdeaea;color:var(--red);font-weight:700;font-size:13px;border:1px solid #f6cfcf}
+.btn{display:inline-flex;align-items:center;gap:7px;border:none;border-radius:10px;background:var(--red);color:#fff;
+  font-weight:700;font-size:14px;padding:10px 14px;line-height:1}
+.btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.btn.blue{background:var(--blue)}
+.btn:active{transform:translateY(1px)}
+.btn[disabled]{opacity:.45}
+.iconbtn{width:42px;height:42px;border-radius:10px;border:1px solid var(--line);background:#fff;display:grid;place-items:center}
+
+/* Chords tab */
+.chordgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.chordcard{text-align:center}
+.chordcard h3{font-size:21px;margin-bottom:2px}
+.chordcard .role{color:var(--muted);font-size:12px;margin-bottom:6px}
+.chordcard svg{width:118px;height:auto}
+.swaprow{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+
+/* Songs tab */
+.controls{position:sticky;top:calc(56px + env(safe-area-inset-top));z-index:20;background:var(--bg);padding:8px 0 6px;margin:-4px 0 6px}
+.search{width:100%;border:1px solid var(--line);border-radius:11px;padding:12px 14px;font-size:15px;background:#fff}
+.chips{display:flex;gap:7px;overflow-x:auto;padding:9px 1px 3px;-webkit-overflow-scrolling:touch}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 13px;font-size:13px;font-weight:600;color:var(--muted)}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip.on.red{background:var(--red);border-color:var(--red)}
+.count{color:var(--muted);font-size:12.5px;margin:4px 2px 10px}
+.song{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:13px;padding:12px;margin-bottom:9px}
+.song .meta{flex:1;min-width:0}
+.song .t{font-weight:700;font-size:15px;line-height:1.25}
+.song .a{color:var(--muted);font-size:12.5px;margin-top:1px}
+.song .row2{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:7px}
+.song .strumtag{font-size:11.5px;font-weight:700;color:var(--blue);background:#eaf0fb;border:1px solid #d3e0f6;border-radius:6px;padding:3px 7px}
+.song .acts{display:flex;flex-direction:column;gap:7px;flex:0 0 auto}
+.star{width:42px;height:42px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:19px;line-height:1;color:#cdc6bd;display:grid;place-items:center}
+.star.on{color:#f4b400;border-color:#f3d98a;background:#fffaf0}
+.play{width:42px;height:42px;border-radius:10px;border:none;background:var(--red);color:#fff;display:grid;place-items:center}
+.play.playing{background:var(--ink)}
+.lyriclink{font-size:11.5px;color:var(--blue);text-decoration:none;display:inline-flex;align-items:center;gap:4px}
+
+/* Strum tab */
+.grid8{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin:10px 0 4px}
+.beat{aspect-ratio:1/1;border-radius:9px;border:1px solid var(--line);display:grid;place-content:center;font-weight:700;font-size:17px;background:var(--soft);position:relative}
+.beat.d{color:var(--ink)} .beat.u{color:var(--blue)} .beat.x{color:var(--red)} .beat.r{color:#cfc7bd}
+.beat.hit{background:var(--red);color:#fff !important;border-color:var(--red);transform:scale(1.06)}
+.beatnums{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin-bottom:2px}
+.beatnums span{text-align:center;font-size:11px;color:var(--muted);font-weight:600}
+.tempo{display:flex;align-items:center;gap:12px;margin-top:6px}
+.tempo input{flex:1}
+.legend{font-size:12px;color:var(--muted);line-height:1.6;margin-top:8px}
+
+/* Practice tab */
+.progwrap{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+.bar{height:10px;border-radius:99px;background:#eee;overflow:hidden;margin-top:8px}
+.bar > i{display:block;height:100%;background:var(--green);width:0;transition:width .3s}
+.today{border:1.5px solid var(--red);background:#fff6f5}
+.weeklbl{font-family:var(--serif);font-size:18px;margin:16px 0 8px;color:var(--ink)}
+.day{display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px}
+.day .num{width:30px;height:30px;flex:0 0 auto;border-radius:8px;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px}
+.day.done .num{background:var(--green)}
+.day .focus{font-weight:700;font-size:14px}
+.day .what{color:var(--muted);font-size:13px;margin-top:2px;line-height:1.45}
+.check{width:30px;height:30px;flex:0 0 auto;border-radius:8px;border:2px solid var(--line);background:#fff;display:grid;place-items:center;color:#fff;font-size:16px}
+.day.done .check{background:var(--green);border-color:var(--green)}
+.tipbox{background:#eaf0fb;border:1px solid #d3e0f6;border-radius:12px;padding:13px;font-size:13.5px;line-height:1.5}
+.tipbox b{color:var(--blue)}
+
+/* Finger / generic content */
+.acc{background:#fff;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;overflow:hidden}
+.acc > button{width:100%;text-align:left;background:#fff;border:none;padding:14px 15px;font-weight:700;font-size:14.5px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.acc .body{padding:0 15px;max-height:0;overflow:hidden;transition:max-height .3s ease, padding .3s ease}
+.acc.open .body{padding:0 15px 15px;max-height:1400px}
+.acc .body p{font-size:13.5px;line-height:1.6;color:#33302c;margin:0 0 9px}
+.acc .body ul{margin:0 0 4px;padding-left:18px}
+.acc .body li{font-size:13.5px;line-height:1.55;color:#33302c;margin-bottom:7px}
+.acc .body li b{color:var(--ink)}
+.chev{transition:transform .25s;color:var(--muted)}
+.acc.open .chev{transform:rotate(180deg)}
+.timerbox{text-align:center}
+.timerbox .clock{font-family:var(--serif);font-size:54px;color:var(--ink);letter-spacing:.02em}
+.presets{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:10px 0}
+
+/* Campfire */
+.verdict{border-radius:14px;padding:16px;text-align:center;margin-bottom:14px;border:1px solid var(--line);background:#fff}
+.verdict .big{font-family:var(--serif);font-size:30px}
+.verdict.ready{background:#eaf6eb;border-color:#bfe3c2}.verdict.ready .big{color:var(--green)}
+.verdict.almost{background:#eaf0fb;border-color:#cfe0f6}.verdict.almost .big{color:var(--blue)}
+.verdict.keep{background:#fff6f5;border-color:#f3cfcf}.verdict.keep .big{color:var(--red)}
+.grouplbl{font-family:var(--serif);font-size:17px;margin:14px 0 7px}
+.cklist label{display:flex;gap:11px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:11px;padding:12px;margin-bottom:7px;font-size:13.5px;line-height:1.4}
+.cklist input{margin:1px 0 0;width:20px;height:20px;flex:0 0 auto;accent-color:var(--green)}
+.cklist label.on{background:#f4faf4;border-color:#cfe6cf}
+
+/* Bottom nav */
+nav{position:fixed;left:0;right:0;bottom:0;z-index:40;background:#fff;border-top:1px solid var(--line);
+  display:flex;padding:6px 4px calc(6px + env(safe-area-inset-bottom));box-shadow:0 -2px 12px rgba(0,0,0,.06)}
+nav button{flex:1;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:5px 2px;color:var(--muted)}
+nav button svg{width:23px;height:23px}
+nav button span{font-size:10px;font-weight:600}
+nav button.on{color:var(--red)}
+.toast{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom));transform:translateX(-50%);
+  background:var(--ink);color:#fff;padding:10px 16px;border-radius:99px;font-size:13px;font-weight:600;
+  opacity:0;pointer-events:none;transition:opacity .25s;z-index:60;white-space:nowrap}
+.toast.show{opacity:1}
+.empty{text-align:center;color:var(--muted);padding:30px 10px;font-size:14px}
+.acctbtn{margin-left:auto;width:38px;height:38px;border-radius:10px;border:1px solid rgba(255,255,255,.55);background:rgba(255,255,255,.14);color:#fff;display:grid;place-items:center;flex:0 0 auto}
+.acctbtn.in{background:#fff;color:var(--red);border-color:#fff}
+.modal{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center}
+.modal.show{display:flex}
+.modal .sheet{background:#fff;width:100%;max-width:760px;border-radius:18px 18px 0 0;padding:20px 18px calc(24px + env(safe-area-inset-bottom));box-shadow:0 -6px 30px rgba(0,0,0,.2);max-height:88vh;overflow:auto}
+.modal .sheet p{font-size:13.5px;line-height:1.55;color:#33302c;margin:0 0 12px}
+@media(min-width:600px){.modal{align-items:center}.modal .sheet{border-radius:18px}}
+.gate{position:fixed;inset:0;z-index:100;background:var(--red);display:none;align-items:center;justify-content:center;padding:24px}
+.gate .gatecard{background:#fff;width:100%;max-width:380px;border-radius:18px;padding:26px 22px calc(26px + env(safe-area-inset-bottom));box-shadow:0 12px 44px rgba(0,0,0,.28);text-align:center}
+.gate .gatelogo{width:54px;height:54px;border-radius:13px;background:var(--red);color:#fff;display:grid;place-items:center;font-family:var(--serif);font-size:31px;margin:0 auto 14px}
+.gate .gatetag{color:var(--red);font-weight:700;font-size:11px;letter-spacing:.11em}
+.gate .gateh{font-size:26px;margin:4px 0 8px;color:var(--ink)}
+.gate .gatep{font-size:13.5px;line-height:1.5;color:var(--muted);margin:0 0 16px}
+.gate input{text-align:left}
+/* Songbook */
+.sbcard{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px;margin-bottom:9px;width:100%;text-align:left;cursor:pointer}
+.sbcard .t{font-weight:700;font-size:15px}
+.sbcard .a{color:var(--muted);font-size:12.5px;margin-top:1px}
+.sbcard .k{margin-left:auto;font-size:12px;font-weight:700;color:var(--blue);background:#eaf0fb;border:1px solid #d3e0f6;border-radius:6px;padding:3px 8px}
+.sbsectlbl{font-family:var(--serif);font-size:18px;margin:14px 0 8px}
+.addbtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:1.5px dashed var(--line);background:var(--soft);border-radius:13px;padding:14px;font-weight:700;color:var(--ink);font-size:14px}
+.sheettop{position:sticky;top:calc(56px + env(safe-area-inset-top));z-index:20;background:var(--bg);padding:6px 0 8px;margin-bottom:6px;border-bottom:1px solid var(--line)}
+.sheettools{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px}
+.tool{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);background:#fff;border-radius:9px;padding:6px 9px;font-size:12.5px;font-weight:600}
+.tool b{font-weight:700}
+.tool button,.sheettools button{border:none;background:none;font-weight:800;font-size:15px;color:var(--red);cursor:pointer;padding:0 4px;line-height:1}
+.sheet{background:#fff;border:1px solid var(--line);border-radius:13px;padding:16px 14px;font-size:16px;line-height:2.5}
+.sheet .sec{margin:0 0 14px}
+.sheet .seclbl{font-weight:700;color:var(--red);font-size:12px;letter-spacing:.05em;text-transform:uppercase;line-height:1.4;margin-bottom:2px}
+.sheet .ln{white-space:pre-wrap;margin-bottom:2px}
+.sheet .seg{display:inline-block;vertical-align:bottom;white-space:pre}
+.sheet .segch{display:block;height:1.15em;line-height:1}
+.sheet .chip-ch{font-weight:800;color:var(--red);font-size:.72em;border:none;background:none;cursor:pointer;padding:0}
+.sheet .chip-ch.empty{visibility:hidden}
+.sheet .blank{height:.8em}
+.sbpop{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:20px}
+.sbpop.show{display:flex}
+.sbpop .card{background:#fff;border-radius:16px;padding:18px;text-align:center;max-width:260px;width:100%}
+.sbpop .card h3{font-size:26px}
+.sbpop svg{width:120px;height:auto;margin:6px 0}
+.sbnote{font-size:12px;color:var(--muted);line-height:1.5;background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:10px}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="logo">G</div>
+  <div><h1>Core Chord Formula</h1><p>YOUR PLAY-ANYTHING TOOLKIT</p></div>
+  <button id="acctBtn" class="acctbtn" onclick="openAcct()" aria-label="Save progress / account"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-4.4 0-9 2.2-9 5v1h18v-1c0-2.8-4.6-5-9-5z"/></svg></button>
+</div></header>
+
+<main>
+  <!-- CHORDS -->
+  <section id="t-chords" class="tab active">
+    <div class="tabhead"><div class="k">The four chords</div><h2>Your Chords</h2>
+      <p>These four shapes unlock every song in here. Tap any chord to hear it. Press only as hard as you need to, and aim for the fingertips.</p></div>
+    <div id="chordGrid" class="chordgrid"></div>
+    <div class="card" style="margin-top:4px">
+      <h3 style="font-size:18px;margin-bottom:6px">Reading a chord box</h3>
+      <p style="font-size:13.5px;color:var(--muted);line-height:1.6;margin:0">
+      Vertical lines are the strings, low E on the left. The thick line at the top is the nut.
+      Dots show where your fingers press. <b style="color:var(--ink)">o</b> means play that string open,
+      <b style="color:var(--ink)">x</b> means do not play it.</p>
+    </div>
+  </section>
+
+  <!-- SONGS -->
+  <section id="t-songs" class="tab">
+    <div class="tabhead"><div class="k">105 songs, 4 chords</div><h2>Song Library</h2>
+      <p>Find a song you actually want to play. Tap play to hear its feel, star it for your campfire setlist.</p></div>
+    <div class="controls">
+      <input id="search" class="search" type="search" placeholder="Search song or artist..." autocomplete="off">
+      <div class="chips" id="genreChips"></div>
+      <div class="chips" id="filterChips"></div>
+    </div>
+    <div class="count" id="songCount"></div>
+    <div id="songList"></div>
+  </section>
+
+  <!-- SONGBOOK -->
+  <section id="t-songbook" class="tab">
+    <div id="sbListWrap">
+      <div class="tabhead"><div class="k">Play a whole song</div><h2>Songbook</h2>
+        <p>Full chord-and-lyric sheets you can play start to finish. Tap any chord to see the shape and hear it. Transpose, add a capo, or turn on auto-scroll for hands-free playing.</p></div>
+      <div id="sbList"></div>
+    </div>
+    <div id="sbSheet" style="display:none"></div>
+  </section>
+
+  <!-- STRUM -->
+  <section id="t-strum" class="tab">
+    <div class="tabhead"><div class="k">Right hand</div><h2>Strumming Patterns</h2>
+      <p>Your left hand picks the chords. Your right hand picks the vibe. Pick a chord, hit play, slow it down until the motion feels easy.</p></div>
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-weight:700;font-size:13px">Hear it on:</span>
+        <div class="chips" id="strumChord" style="padding:0;flex:1"></div>
+      </div>
+    </div>
+    <div id="patternList"></div>
+    <div class="card">
+      <h3 style="font-size:17px;margin-bottom:8px">Quick tips</h3>
+      <ul style="margin:0;padding-left:18px;font-size:13.5px;line-height:1.6;color:#33302c">
+        <li>Start every new pattern slowly. Half speed, get the motion right, then build up.</li>
+        <li>Your wrist does the work, not your arm. Let it swing like a pendulum.</li>
+        <li>Stay loose. If your hand feels tense, shake it out.</li>
+        <li>One pattern per week is plenty. Master the Basic first.</li>
+        <li>Try each pattern on a song you already know.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- PRACTICE -->
+  <section id="t-practice" class="tab">
+    <div class="tabhead"><div class="k">21 days</div><h2>Practice Tracker</h2>
+      <p>One clear focus each day. Do it, check it off, move on. Your progress saves right here on this device, no login needed.</p></div>
+    <div class="progwrap">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <strong id="progText" style="font-size:15px">0 of 21 days</strong>
+        <button class="btn ghost" style="padding:7px 11px;font-size:12px" onclick="resetPractice()">Reset</button>
+      </div>
+      <div class="bar"><i id="progBar"></i></div>
+    </div>
+    <div id="todayBox"></div>
+    <div id="practiceList"></div>
+    <div class="tipbox" style="margin-top:6px"><b>Short on time?</b> On 10-minute days, play through your best song twice slowly, then once at full speed. Three focused reps beat ten scattered minutes of noodling.</div>
+  </section>
+
+  <!-- FINGERS -->
+  <section id="t-fingers" class="tab">
+    <div class="tabhead"><div class="k">First week</div><h2>Sore Finger Survival Kit</h2>
+      <p>Your fingers will hurt for the first few days. That is normal, and it is temporary. Here is how to get through week one without quitting.</p></div>
+    <div class="card timerbox">
+      <h3 style="font-size:17px;margin-bottom:4px">Practice timer</h3>
+      <p style="font-size:12.5px;color:var(--muted);margin:0 0 4px">Short, consistent sessions beat one long painful one.</p>
+      <div class="clock" id="clock">15:00</div>
+      <div class="presets">
+        <button class="btn ghost" onclick="setTimer(5)">5 min</button>
+        <button class="btn ghost" onclick="setTimer(15)">15 min</button>
+        <button class="btn ghost" onclick="setTimer(20)">20 min</button>
+      </div>
+      <button class="btn" id="timerBtn" onclick="toggleTimer()" style="min-width:120px;justify-content:center">Start</button>
+    </div>
+    <div id="fingerAcc"></div>
+  </section>
+
+  <!-- CAMPFIRE -->
+  <section id="t-ready" class="tab">
+    <div class="tabhead"><div class="k">Self-assessment</div><h2>Campfire Ready?</h2>
+      <p>Honestly tick each box you can do. When they are all checked, you are not hoping you are ready. You know.</p></div>
+    <div id="verdict" class="verdict"></div>
+    <div id="checklist"></div>
+    <div class="card" style="font-size:13px;color:var(--muted);line-height:1.6">
+      <b style="color:var(--ink)">Remember:</b> "ready" does not mean "perfect." It means you can sit down, play songs people recognise, and enjoy doing it. That is the whole point.
+    </div>
+  </section>
+</main>
+
+<nav id="nav"></nav>
+<div class="gate" id="loginGate">
+  <div class="gatecard">
+    <div class="gatelogo">G</div>
+    <div class="gatetag">CORE CHORD FORMULA</div>
+    <h2 class="gateh">Your toolkit awaits</h2>
+    <p class="gatep">Sign in to open it. Pop in your email and we'll send a code. No password to remember.</p>
+    <div id="gateBody"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<div class="modal" id="acctModal">
+  <div class="sheet">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <h3 style="font-size:20px">Your progress</h3>
+      <button class="iconbtn" style="width:34px;height:34px" onclick="closeAcct()" aria-label="Close">&#10005;</button>
+    </div>
+    <div id="acctBody"></div>
+  </div>
+</div>
+
+<script>
+/* ============ DATA ============ */
+const SONGS = [{"title":"Sweet Home Alabama","artist":"Lynyrd Skynyrd","genre":"Rock","progression":"D - C - G","strum":"Rock","chordCount":3,"chords":["G","C","D"]},{"title":"Knockin' on Heaven's Door","artist":"Bob Dylan","genre":"Rock","progression":"G - D - C","strum":"Folk","chordCount":3,"chords":["G","C","D"]},{"title":"Bad Moon Rising","artist":"CCR","genre":"Rock","progression":"G - C - D","strum":"Rock","chordCount":3,"chords":["G","C","D"]},{"title":"Zombie","artist":"Cranberries","genre":"Rock","progression":"Em - C - G - D","strum":"Rock","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Wake Me Up When September Ends","artist":"Green Day","genre":"Rock","progression":"G - D - Em - C","strum":"Ballad","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Good Riddance (Time of Your Life)","artist":"Green Day","genre":"Rock","progression":"G - C - D","strum":"Folk","chordCount":3,"chords":["G","C","D"]},{"title":"Free Fallin'","artist":"Tom Petty","genre":"Rock","progression":"G - C - D","strum":"Basic","chordCount":3,"chords":["G","C","D"]},{"title":"Used to Love Her","artist":"Guns N' Roses","genre":"Rock","progression":"D - C - G","strum":"Rock","chordCount":3,"chords":["G","C","D"]},{"title":"Born in the U.S.A.","artist":"Bruce Springsteen","genre":"Rock","progression":"G - C - D","strum":"Rock","chordCount":3,"chords":["G","C","D"]},{"title":"Rocky Mountain High","artist":"John Denver","genre":"Rock","progression":"D - G - C - Em","strum":"Folk","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Brown Eyed Girl","artist":"Van Morrison","genre":"Rock","progression":"G - C - G - D","strum":"Basic","chordCount":3,"chords":["G","C","D"]},{"title":"Wonderful Tonight","artist":"Eric Clapton","genre":"Rock","progression":"G - D - C - D","strum":"Ballad","chordCount":3,"chords":["G","C","D"]},{"title":"Every Rose Has Its Thorn","artist":"Poison","genre":"Rock","progression":"G - C - D","strum":"Ballad","chordCount":3,"chords":["G","C","D"]},{"title":"What I Got","artist":"Sublime","genre":"Rock","progression":"D - G","strum":"Island","chordCount":2,"chords":["G","D"]},{"title":"Wild Thing","artist":"The Troggs","genre":"Rock","progression":"G - C - D","strum":"Rock","chordCount":3,"chords":["G","C","D"]},{"title":"Louie Louie","artist":"The Kingsmen","genre":"Rock","progression":"G - C - D - C","strum":"Rock","chordCount":3,"chords":["G","C","D"]},{"title":"La Bamba","artist":"Ritchie Valens","genre":"Rock","progression":"C - D - G","strum":"Rock","chordCount":3,"chords":["G","C","D"]},{"title":"Blitzkrieg Bop","artist":"Ramones","genre":"Rock","progression":"G - C - D","strum":"Rock","chordCount":3,"chords":["G","C","D"]},{"title":"Let It Be","artist":"Beatles","genre":"Pop","progression":"G - D - Em - C","strum":"Ballad","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Hey Ya!","artist":"Outkast","genre":"Pop","progression":"G - C - D - Em","strum":"Basic","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Counting Stars","artist":"OneRepublic","genre":"Pop","progression":"Em - G - D - C","strum":"Basic","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Riptide","artist":"Vance Joy","genre":"Pop","progression":"G - C - D","strum":"Basic","chordCount":3,"chords":["G","C","D"]},{"title":"Hey Soul Sister","artist":"Train","genre":"Pop","progression":"G - D - Em - C","strum":"Basic","chordCount":4,"chords":["G","C","D","Em"]},{"title":"I'm Yours","artist":"Jason Mraz","genre":"Pop","progression":"G - D - Em - C","strum":"Island","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Pumped Up Kicks","artist":"Foster the People","genre":"Pop","progression":"Em - G - D - C","strum":"Basic","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Radioactive","artist":"Imagine Dragons","genre":"Pop","progression":"Em - G - D - C","strum":"Rock","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Happier","artist":"Marshmello ft. Bastille","genre":"Pop","progression":"Em - G - D - C","strum":"Basic","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Love Yourself","artist":"Justin Bieber","genre":"Pop","progression":"G - D - Em - C","strum":"Basic","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Perfect","artist":"Ed Sheeran","genre":"Pop","progression":"G - Em - C - D","strum":"Ballad","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Photograph","artist":"Ed Sheeran","genre":"Pop","progression":"G - D - Em - C","strum":"Ballad","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Budapest","artist":"George Ezra","genre":"Pop","progression":"G - D - C","strum":"Basic","chordCount":3,"chords":["G","C","D"]},{"title":"Ho Hey","artist":"The Lumineers","genre":"Pop","progression":"C - G - D","strum":"Folk","chordCount":3,"chords":["G","C","D"]},{"title":"Shut Up and Dance","artist":"Walk the Moon","genre":"Pop","progression":"Em - C - G - D","strum":"Rock","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Cheerleader","artist":"OMI","genre":"Pop","progression":"G - C - Em - D","strum":"Island","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Someone Like You","artist":"Adele","genre":"Pop","progression":"G - D - Em - C","strum":"Ballad","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Stay With Me","artist":"Sam Smith","genre":"Pop","progression":"Em - C - G","strum":"Ballad","chordCount":3,"chords":["G","C","Em"]},{"title":"Viva La Vida","artist":"Coldplay","genre":"Pop","progression":"G - D - Em - C","strum":"Basic","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Yellow","artist":"Coldplay","genre":"Pop","progression":"G - D - C","strum":"Ballad","chordCount":3,"chords":["G","C","D"]},{"title":"The Scientist","artist":"Coldplay","genre":"Pop","progression":"Em - C - G - D","strum":"Ballad","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Clocks","artist":"Coldplay","genre":"Pop","progression":"Em - G - D","strum":"Basic","chordCount":3,"chords":["G","D","Em"]},{"title":"Wagon Wheel","artist":"Old Crow Medicine Show","genre":"Folk & Acoustic","progression":"G - D - Em - C","strum":"Folk","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Take Me Home, Country Roads","artist":"John Denver","genre":"Folk & Acoustic","progression":"G - Em - D - C","strum":"Folk","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Save Tonight","artist":"Eagle-Eye Cherry","genre":"Folk & Acoustic","progression":"Em - C - G - D","strum":"Basic","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Blowin' in the Wind","artist":"Bob Dylan","genre":"Folk & Acoustic","progression":"G - C - D","strum":"Folk","chordCount":3,"chords":["G","C","D"]},{"title":"Mr. Tambourine Man","artist":"Bob Dylan","genre":"Folk & Acoustic","progression":"G - C - D","strum":"Folk","chordCount":3,"chords":["G","C","D"]},{"title":"This Land Is Your Land","artist":"Woody Guthrie","genre":"Folk & Acoustic","progression":"G - C - D","strum":"Folk","chordCount":3,"chords":["G","C","D"]},{"title":"Leaving on a Jet Plane","artist":"John Denver","genre":"Folk & Acoustic","progression":"G - C - D","strum":"Folk","chordCount":3,"chords":["G","C","D"]},{"title":"Puff the Magic Dragon","artist":"Peter, Paul & Mary","genre":"Folk & Acoustic","progression":"G - C - D - Em","strum":"Folk","chordCount":4,"chords":["G","C","D","Em"]},{"title":"If I Had a Hammer","artist":"Pete Seeger","genre":"Folk & Acoustic","progression":"G - C - D","strum":"Folk","chordCount":3,"chords":["G","C","D"]},{"title":"Wish You Were Here","artist":"Pink Floyd","genre":"Folk & Acoustic","progression":"Em - G - C - D","strum":"Folk","chordCount":4,"chords":["G","C","D","Em"]},{"title":"The Sound of Silence","artist":"Simon & Garfunkel","genre":"Folk & Acoustic","progression":"Em - G - C - D","strum":"Ballad","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Scarborough Fair","artist":"Simon & Garfunkel","genre":"Folk & Acoustic","progression":"Em - D - G - C","strum":"Ballad","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Hallelujah","artist":"Leonard Cohen","genre":"Folk & Acoustic","progression":"G - Em - C - D","strum":"Ballad","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Stand By Me","artist":"Ben E. King","genre":"Folk & Acoustic","progression":"G - Em - C - D","strum":"Basic","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Lean on Me","artist":"Bill Withers","genre":"Folk & Acoustic","progression":"G - C - D - Em","strum":"Basic","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Three Little Birds","artist":"Bob Marley","genre":"Folk & Acoustic","progression":"G - C - D","strum":"Island","chordCount":3,"chords":["G","C","D"]},{"title":"Redemption Song","artist":"Bob Marley","genre":"Folk & Acoustic","progression":"G - Em - C - D","strum":"Folk","chordCount":4,"chords":["G","C","D","Em"]},{"title":"No Woman No Cry","artist":"Bob Marley","genre":"Folk & Acoustic","progression":"G - C - D - Em","strum":"Island","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Catch the Wind","artist":"Donovan","genre":"Folk & Acoustic","progression":"G - C - D","strum":"Folk","chordCount":3,"chords":["G","C","D"]},{"title":"The Boxer","artist":"Simon & Garfunkel","genre":"Folk & Acoustic","progression":"G - C - D - Em","strum":"Folk","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Ring of Fire","artist":"Johnny Cash","genre":"Country","progression":"G - C - D","strum":"Basic","chordCount":3,"chords":["G","C","D"]},{"title":"Achy Breaky Heart","artist":"Billy Ray Cyrus","genre":"Country","progression":"G - D","strum":"Basic","chordCount":2,"chords":["G","D"]},{"title":"Jambalaya","artist":"Hank Williams","genre":"Country","progression":"G - D","strum":"Basic","chordCount":2,"chords":["G","D"]},{"title":"Take Me Home, Country Roads","artist":"John Denver","genre":"Country","progression":"G - Em - D - C","strum":"Folk","chordCount":4,"chords":["G","C","D","Em"]},{"title":"On the Road Again","artist":"Willie Nelson","genre":"Country","progression":"G - C - D","strum":"Basic","chordCount":3,"chords":["G","C","D"]},{"title":"Folsom Prison Blues","artist":"Johnny Cash","genre":"Country","progression":"G - C - D","strum":"Rock","chordCount":3,"chords":["G","C","D"]},{"title":"King of the Road","artist":"Roger Miller","genre":"Country","progression":"G - C - D","strum":"Basic","chordCount":3,"chords":["G","C","D"]},{"title":"You Are My Sunshine","artist":"Jimmie Davis","genre":"Country","progression":"G - C - D","strum":"Folk","chordCount":3,"chords":["G","C","D"]},{"title":"I Walk the Line","artist":"Johnny Cash","genre":"Country","progression":"G - C - D","strum":"Basic","chordCount":3,"chords":["G","C","D"]},{"title":"Jolene","artist":"Dolly Parton","genre":"Country","progression":"Em - C - G - D","strum":"Folk","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Friends in Low Places","artist":"Garth Brooks","genre":"Country","progression":"G - C - D","strum":"Basic","chordCount":3,"chords":["G","C","D"]},{"title":"Cruise","artist":"Florida Georgia Line","genre":"Country","progression":"G - D - Em - C","strum":"Basic","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Chicken Fried","artist":"Zac Brown Band","genre":"Country","progression":"G - C - D - Em","strum":"Folk","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Toes","artist":"Zac Brown Band","genre":"Country","progression":"G - C - D","strum":"Island","chordCount":3,"chords":["G","C","D"]},{"title":"Dirt Road Anthem","artist":"Jason Aldean","genre":"Country","progression":"Em - G - C - D","strum":"Basic","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Fishing in the Dark","artist":"Nitty Gritty Dirt Band","genre":"Country","progression":"G - C - D","strum":"Folk","chordCount":3,"chords":["G","C","D"]},{"title":"Thank God I'm a Country Boy","artist":"John Denver","genre":"Country","progression":"G - C - D","strum":"Folk","chordCount":3,"chords":["G","C","D"]},{"title":"Home","artist":"Phillip Phillips","genre":"Country","progression":"G - C - D - Em","strum":"Folk","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Twist and Shout","artist":"Beatles","genre":"Campfire Classics","progression":"D - G - C","strum":"Rock","chordCount":3,"chords":["G","C","D"]},{"title":"Give Peace a Chance","artist":"John Lennon","genre":"Campfire Classics","progression":"G - D","strum":"Basic","chordCount":2,"chords":["G","D"]},{"title":"Horse With No Name","artist":"America","genre":"Campfire Classics","progression":"Em - D","strum":"Basic","chordCount":2,"chords":["D","Em"]},{"title":"Lively Up Yourself","artist":"Bob Marley","genre":"Campfire Classics","progression":"G - D","strum":"Island","chordCount":2,"chords":["G","D"]},{"title":"Rivers of Babylon","artist":"Melodians","genre":"Campfire Classics","progression":"G - C - D","strum":"Island","chordCount":3,"chords":["G","C","D"]},{"title":"Wonderful World","artist":"Sam Cooke","genre":"Campfire Classics","progression":"G - Em - C - D","strum":"Basic","chordCount":4,"chords":["G","C","D","Em"]},{"title":"You've Got a Friend","artist":"Carole King","genre":"Campfire Classics","progression":"G - C - D - Em","strum":"Ballad","chordCount":4,"chords":["G","C","D","Em"]},{"title":"With or Without You","artist":"U2","genre":"Campfire Classics","progression":"G - D - Em - C","strum":"Basic","chordCount":4,"chords":["G","C","D","Em"]},{"title":"One Love","artist":"Bob Marley","genre":"Campfire Classics","progression":"G - C - D","strum":"Island","chordCount":3,"chords":["G","C","D"]},{"title":"Don't Worry Be Happy","artist":"Bobby McFerrin","genre":"Campfire Classics","progression":"G - C - D","strum":"Island","chordCount":3,"chords":["G","C","D"]},{"title":"Peaceful Easy Feeling","artist":"Eagles","genre":"Campfire Classics","progression":"G - C - D","strum":"Folk","chordCount":3,"chords":["G","C","D"]},{"title":"Take It Easy","artist":"Eagles","genre":"Campfire Classics","progression":"G - C - D - Em","strum":"Folk","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Country Road","artist":"James Taylor","genre":"Campfire Classics","progression":"G - C - D - Em","strum":"Folk","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Fire and Rain","artist":"James Taylor","genre":"Campfire Classics","progression":"G - C - D - Em","strum":"Ballad","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Cat's in the Cradle","artist":"Harry Chapin","genre":"Campfire Classics","progression":"G - C - D - Em","strum":"Folk","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Ob-La-Di, Ob-La-Da","artist":"Beatles","genre":"Campfire Classics","progression":"G - C - D","strum":"Basic","chordCount":3,"chords":["G","C","D"]},{"title":"I Can See Clearly Now","artist":"Johnny Nash","genre":"Campfire Classics","progression":"G - C - D","strum":"Island","chordCount":3,"chords":["G","C","D"]},{"title":"What's Up","artist":"4 Non Blondes","genre":"Campfire Classics","progression":"G - C - D - Em","strum":"Rock","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Summer of '69","artist":"Bryan Adams","genre":"Campfire Classics","progression":"D - G - C - Em","strum":"Rock","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Have You Ever Seen the Rain","artist":"CCR","genre":"Campfire Classics","progression":"G - C - D","strum":"Basic","chordCount":3,"chords":["G","C","D"]},{"title":"Fortunate Son","artist":"CCR","genre":"Campfire Classics","progression":"G - D - C - Em","strum":"Rock","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Proud Mary","artist":"CCR","genre":"Campfire Classics","progression":"G - C - D","strum":"Rock","chordCount":3,"chords":["G","C","D"]},{"title":"Stuck in the Middle With You","artist":"Stealers Wheel","genre":"Campfire Classics","progression":"G - C - D","strum":"Basic","chordCount":3,"chords":["G","C","D"]},{"title":"Father and Son","artist":"Cat Stevens","genre":"Campfire Classics","progression":"G - C - D - Em","strum":"Folk","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Wild World","artist":"Cat Stevens","genre":"Campfire Classics","progression":"G - C - D - Em","strum":"Folk","chordCount":4,"chords":["G","C","D","Em"]},{"title":"American Pie","artist":"Don McLean","genre":"Campfire Classics","progression":"G - C - D - Em","strum":"Folk","chordCount":4,"chords":["G","C","D","Em"]},{"title":"Space Oddity","artist":"David Bowie","genre":"Campfire Classics","progression":"Em - G - C - D","strum":"Ballad","chordCount":4,"chords":["G","C","D","Em"]}];
+
+const CHORDS = {
+  G:{role:"Big, full, bright", shape:[3,2,0,0,0,3]},
+  C:{role:"Warm and round",   shape:[null,3,2,0,1,0]},
+  D:{role:"Punchy and open",  shape:[null,null,0,2,3,2]},
+  Em:{role:"Easy and moody",  shape:[0,2,2,0,0,0]}
+};
+const CHORD_ORDER=["G","C","D","Em"];
+const SB_SHAPES={G:[3,2,0,0,0,3],C:[null,3,2,0,1,0],D:[null,null,0,2,3,2],Em:[0,2,2,0,0,0],Am:[null,0,2,2,1,0],E:[0,2,2,1,0,0],A:[null,0,2,2,2,0],F:[1,3,3,2,1,1],Dm:[null,null,0,2,3,1],G7:[3,2,0,0,0,1],C7:[null,3,2,3,1,0],D7:[null,null,0,2,1,2],E7:[0,2,0,1,0,0],A7:[null,0,2,0,2,0],Am7:[null,0,2,0,1,0],Em7:[0,2,2,0,3,0],B7:[null,2,1,2,0,2]};
+function sbShape(name){ if(SB_SHAPES[name]) return SB_SHAPES[name]; if(CHORDS[name]&&CHORDS[name].shape) return CHORDS[name].shape; return null; }
+const SB_SONGS=[{"title":"Amazing Grace","author":"Traditional (1779)","key":"G","body":"[G]Amazing [G7]grace, how [C]sweet the [G]sound\nThat [G]saved a wretch like [D]me\nI [G]once was [G7]lost, but [C]now am [G]found\nWas [Em]blind but [D]now I [G]see"},{"title":"House of the Rising Sun","author":"Traditional","key":"Am","body":"There [Am]is a [C]house in [D]New Or[F]leans\nThey [Am]call the [C]Rising [E]Sun\nAnd it's [Am]been the [C]ruin of [D]many a poor [F]boy\nAnd [Am]God, I [E]know I'm [Am]one"},{"title":"Oh! Susanna","author":"Stephen Foster (1848)","key":"G","body":"I [G]come from Alabama with my [D]banjo on my [G]knee\nI'm [G]going to Louisiana, my [D]true love for to [G]see\n\n{Chorus}\nOh! Su[C]sanna, oh [G]don't you cry for [D]me\nFor I [G]come from Alabama with my [D]banjo on my [G]knee"},{"title":"Clementine","author":"Traditional (1884)","key":"G","body":"In a [G]cavern, in a canyon, exca[D]vating for a mine\nDwelt a [G]miner, forty-niner, and his [D]daughter Clemen[G]tine\n\n{Chorus}\nOh my [G]darling, oh my darling, oh my [D]darling Clemen[G]tine\nYou are [G]lost and gone for[D]ever, dreadful [G]sorry, Clemen[G]tine"},{"title":"Red River Valley","author":"Traditional","key":"G","body":"From this [G]valley they say you are [C]going\nWe will [G]miss your bright eyes and sweet [D]smile\nFor they [G]say you are taking the [C]sunshine\nThat has [G]brightened our [D]pathway a [G]while"},{"title":"When the Saints Go Marching In","author":"Traditional","key":"G","body":"Oh [G]when the saints go marching in\nOh when the [D]saints go marching in\nOh [G]Lord, I [G7]want to [C]be in that number\nWhen the [G]saints go [D]marching [G]in"},{"title":"Swing Low, Sweet Chariot","author":"Traditional","key":"G","body":"Swing [G]low, sweet [C]chari[G]ot\nComing for to carry me [D]home\nSwing [G]low, sweet [C]chari[G]ot\nComing for to [D]carry me [G]home"},{"title":"Down in the Valley","author":"Traditional","key":"G","body":"Down in the [G]valley, the valley so [D]low\nHang your head [D]over, hear the wind [G]blow\nHear the wind [G]blow, dear, hear the wind [D]blow\nHang your head [D]over, hear the wind [G]blow"},{"title":"Home on the Range","author":"Traditional (1873)","key":"G","body":"Oh [G]give me a home where the [C]buffalo roam\nWhere the [G]deer and the [A]antelope [D]play\nWhere [G]seldom is [G7]heard a dis[C]couraging word\nAnd the [G]skies are not [D]cloudy all [G]day"},{"title":"She'll Be Comin' Round the Mountain","author":"Traditional","key":"G","body":"She'll be [G]comin' round the mountain when she comes\nShe'll be [C]comin' round the mountain when she [G]comes\nShe'll be [G]comin' round the [C]mountain, she'll be [D]comin' round the mountain\nShe'll be [G]comin' round the [D]mountain when she [G]comes"},{"title":"Michael, Row the Boat Ashore","author":"Traditional","key":"C","body":"Michael, [C]row the boat a[Em]shore, halle[F]lu[C]jah\nMichael, [C]row the boat a[G]shore, halle[C]lujah"},{"title":"This Little Light of Mine","author":"Traditional","key":"G","body":"This little [G]light of mine, I'm gonna let it [C]shine\nThis little [G]light of mine, I'm gonna let it [D]shine\nThis little [G]light of mine, I'm gonna let it [C]shine\nLet it [G]shine, let it [D]shine, let it [G]shine"}];
+const SB_SCALE=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const SB_FLATS={Db:"C#",Eb:"D#",Gb:"F#",Ab:"G#",Bb:"A#"};
+const OPEN=[82.41,110.00,146.83,196.00,246.94,329.63]; // low E .. high e
+
+const PATTERNS=[
+ {id:"Basic",name:"The Basic",sub:"Your starting point",steps:["D","-","D","U","U","D","U","-"],
+  desc:"Your foundation. It works on almost every song in the library. Learn this one first and use it as your default.",
+  best:"Pop, rock, general purpose. The pattern you learn in Module 1."},
+ {id:"Ballad",name:"The Ballad",sub:"Slow and gentle",steps:["D","-","-","U","D","-","-","U"],
+  desc:"Fewer strums, more space. Let the chords ring out. The pattern for quiet, emotional moments.",
+  best:"Ballads, slow songs, evening playing. Songs like Stand By Me."},
+ {id:"Rock",name:"The Rock Drive",sub:"Energetic",steps:["D","D","U","D","D","D","U","D"],
+  desc:"Heavy on downstrokes with just enough upstrokes to keep momentum. Strum harder than the ballad. This is the one that makes people nod their heads.",
+  best:"Rock, upbeat songs. Sweet Home Alabama, Bad Moon Rising."},
+ {id:"Folk",name:"The Folk Roll",sub:"Campfire classic",steps:["D","-","D","U","-","U","D","U"],
+  desc:"The warm, rolling sound everyone associates with campfire guitar. The missed beat on the & of 2 gives it that signature feel.",
+  best:"Folk, country, campfire songs. Wagon Wheel, Country Roads."},
+ {id:"Island",name:"The Island Strum",sub:"Laid back",steps:["D","U","-","U","-","U","D","U"],
+  desc:"Upstroke-heavy and relaxed. The missed downstrokes on beats 2 and 3 create that breezy, swaying feel. Suddenly it sounds like a beach.",
+  best:"Reggae-influenced songs, relaxed vibes. Three Little Birds."},
+ {id:"Percussive",name:"The Percussive Strum",sub:"Advanced feel",steps:["D","-","x","U","D","-","x","U"],
+  desc:"The x is a muted strum: lightly rest your fretting fingers across the strings and strum for a percussive chk. Makes simple playing sound polished.",
+  best:"Adding groove to any song. Makes you sound more experienced than you are."}
+];
+
+const PRACTICE=[
+ ["First chord + first song","Learn G and D. Basic strum. Play Song 1."],
+ ["Second song","Review G and D. Play Song 2. Practice switching."],
+ ["Third chord","Learn C. Practice G-C and C-D transitions."],
+ ["Song 3","Play Song 3 (G, C, D). Review transitions."],
+ ["Songs 4-5","Play Songs 4 and 5. Try a new strumming pattern."],
+ ["Review day","Play all 5 songs back to back. Note tricky spots."],
+ ["Rest or play","Free play. Pick your favourite songs and enjoy."],
+ ["Fourth chord","Learn Em. Practice transitions to all 3 others."],
+ ["Song 6 (pop)","Play Song 6 using all 4 chords."],
+ ["Song 7 (rock) + strum","Play Song 7. Try an advanced strumming pattern."],
+ ["Song 8 (country)","Play Song 8. Work on transition speed."],
+ ["Song 9 (folk)","Play Song 9. Focus on smooth flow."],
+ ["Song 10 + setlist","Play Song 10. Pick 3 favourites for your setlist."],
+ ["Review day","Play your 3-song setlist back to back. Note weak spots."],
+ ["Polish setlist","Play your 3-song setlist. Fix awkward transitions."],
+ ["Polish setlist","Same 3 songs. Focus on consistent strumming."],
+ ["Play along","Play along with original recordings of your songs."],
+ ["Strumming variety","Try different strum patterns on your setlist."],
+ ["New song practice","Pick a new song from the library. Learn it solo."],
+ ["Campfire challenge","Play 3 songs back to back without stopping."],
+ ["Celebration day","Play anything you want. You made it."]
+];
+
+const FINGER=[
+ {q:"Why your fingers hurt", open:true, html:`<p>Guitar strings are made of steel. You are pressing soft fingertips into steel and holding them there. Your body responds by building calluses, thicker layers of skin that make pressing strings comfortable. This takes about 7 to 14 days of regular playing. Once calluses form, the pain goes away and does not come back as long as you keep playing.</p>`},
+ {q:"The first week game plan", html:`<p><b>Days 1-3: Keep sessions short.</b> Limit practice to 15-20 minutes. When your fingers start stinging, stop. Pushing through sharp pain does not build calluses faster, it just tears up your skin. Set a timer and put the guitar down when it goes off.</p><p><b>Days 4-7: Build up gradually.</b> Your fingertips will feel tender but less raw. Extend to 20-25 minutes. You will notice the pain shifting from sharp stinging to a dull pressure. That is the calluses forming.</p><p><b>Days 8-14: Turning the corner.</b> Most players notice a big drop in pain around day 8-10. By day 14 you will have visible calluses and pressing strings feels like a firm pillow instead of a knife edge. You are through the hardest part.</p>`},
+ {q:"Practical tips that actually help", html:`<ul><li><b>Press only as hard as you need to.</b> Beginners almost always press too hard. If the note sounds clean, that is enough.</li><li><b>Play on the fingertips, not the pads.</b> The tips build calluses faster. Adjust your hand angle to come down on the tip.</li><li><b>Keep your nails short</b> on your fretting hand so you can press straight down with the fingertip.</li><li><b>Dry your hands before playing.</b> Wet fingers are softer and more prone to pain.</li><li><b>Do not peel calluses.</b> Peeling resets the process and you start over.</li><li><b>Use lighter gauge strings if needed</b> (often labelled "extra light" or "10s"). Any shop can swap them in minutes.</li><li><b>Play every day, even for 5 minutes.</b> Consistency matters more than duration.</li></ul>`},
+ {q:"What NOT to do", html:`<ul><li><b>Do not use numbing cream or ice.</b> You need to feel the strings to know how hard you are pressing.</li><li><b>Do not soak fingers in vinegar or alcohol.</b> It dries out your skin and makes it crack and peel.</li><li><b>Do not skip days to "let them heal."</b> Taking a week off resets your callus progress. Even on sore days, do a gentle 5-minute session.</li></ul>`},
+ {q:"The 5-minute sore-day routine", html:`<p>On days when your fingers are really tender, do this instead of a full session. It keeps calluses building without making things worse:</p><ul><li>Form each of your 4 chords and hold 5 seconds each (20 sec).</li><li>Strum each chord 4 times slowly (30 sec).</li><li>Switch G to D four times, then C to Em four times (1 min).</li><li>Play through the easiest song you know once, slowly (2-3 min).</li><li>Done. Put the guitar down. You kept your calluses on track without overdoing it.</li></ul>`}
+];
+
+const CAMPFIRE=[
+ {g:"Chord confidence", items:[
+  "I can form G Major cleanly and all strings ring out without buzzing",
+  "I can form C Major cleanly (no muted strings on the high E)",
+  "I can form D Major cleanly with all 3 strings ringing",
+  "I can form Em cleanly",
+  "I can switch between any two chords without pausing for more than 1-2 seconds",
+  "I can switch chords without looking at my fretting hand most of the time"]},
+ {g:"Strumming", items:[
+  "I can hold a steady basic strumming pattern for a whole song without losing the beat",
+  "I can keep strumming while switching chords (even if the switch is slightly slow)",
+  "I know at least 2 different strumming patterns",
+  "My strumming sounds rhythmic and consistent, not robotic or random"]},
+ {g:"Song readiness", items:[
+  "I can play at least 3 complete songs from start to finish without stopping",
+  "I can play those 3 songs back to back without a long break between them",
+  "Someone walking into the room would recognise what song I am playing",
+  "I can play at least 1 song at roughly the tempo of the original recording",
+  "I know which songs I want to play if someone hands me a guitar"]},
+ {g:"Musical independence", items:[
+  "I can look up the chords for a new song online and figure out how to play it",
+  "I can match a strumming pattern to a new song by listening to it",
+  "I have added at least 1 song to my playlist that was not taught in the course",
+  "I feel confident picking up my guitar without needing to follow a lesson"]}
+];
+
+/* ============ STATE / STORAGE ============ */
+const LS={get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},
+          set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){} if(typeof k==="string"&&k.indexOf("ccf_")===0&&typeof onLocalWrite==="function"){onLocalWrite(k);}}};
+let setlist=LS.get("ccf_setlist",[]);
+let mySongs=LS.get("ccf_mysongs",[]);
+let sbState={view:"list"}; let sbPopChord="";
+let practiceDone=LS.get("ccf_practice",{});
+let campfireDone=LS.get("ccf_campfire",{});
+let selectedStrumChord="G";
+
+const songKey=s=>s.title+"|"+s.artist+"|"+s.genre;
+function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("show"),1400);}
+
+/* ============ AUDIO ============ */
+let ctx, master, noiseBuf;
+function ensureAudio(){
+  if(ctx) { if(ctx.state==="suspended") ctx.resume(); return; }
+  const AC=window.AudioContext||window.webkitAudioContext;
+  ctx=new AC();
+  master=ctx.createGain(); master.gain.value=0.85; master.connect(ctx.destination);
+  const len=ctx.sampleRate*0.2; noiseBuf=ctx.createBuffer(1,len,ctx.sampleRate);
+  const d=noiseBuf.getChannelData(0); for(let i=0;i<len;i++) d[i]=Math.random()*2-1;
+}
+function chordFreqs(shape){const f=[];shape.forEach((fr,i)=>{if(fr!==null)f.push(OPEN[i]*Math.pow(2,fr/12));});return f;}
+function pluck(freq,time,vel){
+  const o=ctx.createOscillator(); o.type="triangle"; o.frequency.value=freq;
+  const o2=ctx.createOscillator(); o2.type="sine"; o2.frequency.value=freq*2; o2.detune.value=4;
+  const g=ctx.createGain(); const g2=ctx.createGain();
+  g.gain.setValueAtTime(0,time); g.gain.linearRampToValueAtTime(0.16*vel,time+0.006);
+  g.gain.exponentialRampToValueAtTime(0.0008,time+1.4);
+  g2.gain.setValueAtTime(0,time); g2.gain.linearRampToValueAtTime(0.05*vel,time+0.006);
+  g2.gain.exponentialRampToValueAtTime(0.0006,time+0.7);
+  o.connect(g).connect(master); o2.connect(g2).connect(master);
+  o.start(time);o.stop(time+1.45); o2.start(time);o2.stop(time+0.75);
+}
+function strum(chord,dir,time,vel){
+  ensureAudio(); time=time||ctx.currentTime; vel=vel||1;
+  const sh=(CHORDS[chord]||CHORDS.G).shape; let f=chordFreqs(sh); if(dir==="up")f=f.slice().reverse();
+  f.forEach((fr,i)=>pluck(fr,time+i*0.013,vel*(dir==="up"?0.8:1)));
+}
+function chuck(time){
+  ensureAudio(); time=time||ctx.currentTime;
+  const s=ctx.createBufferSource(); s.buffer=noiseBuf;
+  const bp=ctx.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=320; bp.Q.value=1.2;
+  const g=ctx.createGain(); g.gain.setValueAtTime(0.14,time); g.gain.exponentialRampToValueAtTime(0.001,time+0.09);
+  s.connect(bp).connect(g).connect(master); s.start(time); s.stop(time+0.12);
+}
+
+/* sequencer */
+let seq={on:false,t:null,i:0,steps:[],bpm:90,hl:null,id:null};
+function seqStop(){ if(seq.t)clearTimeout(seq.t); if(seq.hl)seq.hl(-1); const id=seq.id; seq={on:false,t:null,i:0,steps:[],bpm:90,hl:null,id:null}; return id; }
+function seqStart(id,steps,bpm,hl){
+  seqStop(); ensureAudio(); seq.on=true; seq.id=id; seq.steps=steps; seq.bpm=bpm; seq.hl=hl; seq.i=0;
+  const tick=()=>{
+    if(!seq.on)return;
+    const st=seq.steps[seq.i%seq.steps.length];
+    const t=ctx.currentTime+0.03;
+    if(st.dir==="D")strum(st.chord,"down",t);
+    else if(st.dir==="U")strum(st.chord,"up",t,0.85);
+    else if(st.dir==="x")chuck(t);
+    if(seq.hl)seq.hl(seq.i%seq.steps.length);
+    seq.i++;
+    seq.t=setTimeout(tick,(60/seq.bpm/2)*1000);
+  };
+  tick();
+}
+
+/* ============ RENDER: CHORDS ============ */
+function chordSVG(shape){
+  const W=126,H=150,x0=20,dx=17,y0=30,dy=26,frets=4;
+  let s=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+  s+=`<rect x="${x0}" y="${y0}" width="${dx*5}" height="${dy*frets}" fill="#fff"/>`;
+  for(let f=0;f<=frets;f++){const y=y0+f*dy;s+=`<line x1="${x0}" y1="${y}" x2="${x0+dx*5}" y2="${y}" stroke="#cbb89a" stroke-width="${f===0?4:1.4}"/>`;}
+  for(let i=0;i<6;i++){const x=x0+i*dx;s+=`<line x1="${x}" y1="${y0}" x2="${x}" y2="${y0+dy*frets}" stroke="#b9a98c" stroke-width="1.4"/>`;}
+  for(let i=0;i<6;i++){const x=x0+i*dx,v=shape[i];
+    if(v===null)s+=`<text x="${x}" y="${y0-7}" text-anchor="middle" font-size="13" fill="#b6ada0" font-family="Open Sans">x</text>`;
+    else if(v===0)s+=`<circle cx="${x}" cy="${y0-11}" r="4.5" fill="none" stroke="#555" stroke-width="1.4"/>`;
+  }
+  for(let i=0;i<6;i++){const v=shape[i];if(v&&v>0){const x=x0+i*dx,y=y0+(v-0.5)*dy;s+=`<circle cx="${x}" cy="${y}" r="7.5" fill="#d30e0f"/>`;}}
+  s+=`</svg>`; return s;
+}
+function renderChords(){
+  const g=document.getElementById("chordGrid");
+  g.innerHTML=CHORD_ORDER.map(name=>`<div class="card chordcard">
+    <h3>${name}</h3><div class="role">${CHORDS[name].role}</div>
+    ${chordSVG(CHORDS[name].shape)}
+    <div><button class="btn" style="margin-top:8px" onclick="strum('${name}','down');flash(this)">Hear ${name}</button></div>
+  </div>`).join("");
+}
+function flash(btn){btn.style.background="#a40b0c";setTimeout(()=>btn.style.background="",180);}
+
+/* ============ RENDER: SONGS ============ */
+let songFilter={genre:"All", q:"", chords:0, strum:"All", setOnly:false};
+const GENRES=["All","Rock","Pop","Folk & Acoustic","Country","Campfire Classics"];
+function renderGenreChips(){
+  document.getElementById("genreChips").innerHTML=GENRES.map(g=>
+    `<button class="chip ${songFilter.genre===g?'on red':''}" onclick="songFilter.genre='${g}';renderGenreChips();renderSongs()">${g}</button>`).join("");
+}
+function renderFilterChips(){
+  const fc=document.getElementById("filterChips");
+  const cc=[[0,"Any chords"],[2,"2 chords"],[3,"3 chords"]];
+  let h=cc.map(([n,l])=>`<button class="chip ${songFilter.chords===n?'on':''}" onclick="songFilter.chords=${n};renderFilterChips();renderSongs()">${l}</button>`).join("");
+  h+=`<button class="chip ${songFilter.setOnly?'on':''}" onclick="songFilter.setOnly=!songFilter.setOnly;renderFilterChips();renderSongs()">&#9733; Setlist (${setlist.length})</button>`;
+  fc.innerHTML=h;
+}
+function filteredSongs(){
+  return SONGS.filter(s=>{
+    if(songFilter.genre!=="All"&&s.genre!==songFilter.genre)return false;
+    if(songFilter.chords&&s.chordCount!==songFilter.chords)return false;
+    if(songFilter.setOnly&&!setlist.includes(songKey(s)))return false;
+    if(songFilter.q){const q=songFilter.q.toLowerCase();if(!(s.title.toLowerCase().includes(q)||s.artist.toLowerCase().includes(q)))return false;}
+    return true;
+  });
+}
+function renderSongs(){
+  const list=filteredSongs();
+  document.getElementById("songCount").textContent=list.length+" song"+(list.length===1?"":"s");
+  const el=document.getElementById("songList");
+  if(!list.length){el.innerHTML=`<div class="empty">No songs match. Try clearing a filter.</div>`;return;}
+  el.innerHTML=list.map(s=>{
+    const k=songKey(s), starred=setlist.includes(k);
+    const badges=s.chords.map(c=>`<span class="chordbadge">${c}</span>`).join("");
+    const lyr="https://www.google.com/search?q="+encodeURIComponent(s.title+" "+s.artist+" chords lyrics");
+    return `<div class="song">
+      <button class="play" data-k="${encodeURIComponent(k)}" onclick="toggleSong(this,'${encodeURIComponent(k)}')" aria-label="Play">${PLAY_SVG}</button>
+      <div class="meta">
+        <div class="t">${esc(s.title)}</div>
+        <div class="a">${esc(s.artist)}</div>
+        <div class="row2">${badges}<button class="strumtag" onclick="goPattern('${s.strum}')">${s.strum} strum</button></div>
+        <div style="margin-top:6px"><a class="lyriclink" href="${lyr}" target="_blank" rel="noopener">Find chords &amp; lyrics &#8599;</a></div>
+      </div>
+      <div class="acts"><button class="star ${starred?'on':''}" onclick="toggleStar('${encodeURIComponent(k)}',this)" aria-label="Star">&#9733;</button></div>
+    </div>`;
+  }).join("");
+}
+function esc(t){return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");}
+const PLAY_SVG=`<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
+const STOP_SVG=`<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>`;
+function songStepsFor(s){
+  const pat=PATTERNS.find(p=>p.id===s.strum)||PATTERNS[0];
+  const chords=s.progression.split("-").map(x=>x.trim());
+  let steps=[]; chords.forEach(ch=>pat.steps.forEach(d=>steps.push({dir:d,chord:CHORDS[ch]?ch:"G"})));
+  return steps;
+}
+function toggleSong(btn,encK){
+  const k=decodeURIComponent(encK);
+  const playingThis=(seq.id==="song:"+k);
+  document.querySelectorAll(".play.playing").forEach(b=>{b.classList.remove("playing");b.innerHTML=PLAY_SVG;});
+  if(playingThis){seqStop();return;}
+  const s=SONGS.find(x=>songKey(x)===k); if(!s)return;
+  btn.classList.add("playing"); btn.innerHTML=STOP_SVG;
+  seqStart("song:"+k, songStepsFor(s), 92, null);
+}
+function toggleStar(encK,btn){
+  const k=decodeURIComponent(encK); const i=setlist.indexOf(k);
+  if(i>=0){setlist.splice(i,1);btn.classList.remove("on");toast("Removed from setlist");}
+  else{setlist.push(k);btn.classList.add("on");toast("Added to setlist ★");}
+  LS.set("ccf_setlist",setlist); renderFilterChips();
+  if(songFilter.setOnly)renderSongs();
+}
+
+/* ============ RENDER: STRUM ============ */
+function renderStrumChord(){
+  document.getElementById("strumChord").innerHTML=CHORD_ORDER.map(c=>
+    `<button class="chip ${selectedStrumChord===c?'on red':''}" onclick="selectedStrumChord='${c}';renderStrumChord()">${c}</button>`).join("");
+}
+const BEATLBL=["1","&","2","&","3","&","4","&"];
+function renderPatterns(){
+  document.getElementById("patternList").innerHTML=PATTERNS.map((p,idx)=>{
+    const nums=BEATLBL.map(n=>`<span>${n}</span>`).join("");
+    const cells=p.steps.map((d,i)=>{const cls=d==="D"?"d":d==="U"?"u":d==="x"?"x":"r";const lbl=d==="-"?"&middot;":d;return `<div class="beat ${cls}" data-p="${idx}" data-i="${i}">${lbl}</div>`;}).join("");
+    return `<div class="card" id="pat-${p.id}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+        <div><h3 style="font-size:19px">${p.name}</h3><div style="color:var(--muted);font-size:12.5px;margin-top:1px">${p.sub}</div></div>
+        <button class="play" id="patbtn-${idx}" onclick="togglePattern(${idx})">${PLAY_SVG}</button>
+      </div>
+      <div class="beatnums">${nums}</div>
+      <div class="grid8">${cells}</div>
+      <p style="font-size:13px;line-height:1.55;color:#33302c;margin:8px 0 6px">${p.desc}</p>
+      <div class="pill" style="font-size:11.5px"><b>Best for:</b> ${p.best}</div>
+      <div class="tempo"><span style="font-size:12px;color:var(--muted)">Slow</span>
+        <input type="range" min="50" max="130" value="90" oninput="patTempo[${idx}]=+this.value;document.getElementById('bpm-${idx}').textContent=this.value">
+        <span style="font-size:12px;color:var(--muted)">Fast</span>
+        <span style="font-size:12px;font-weight:700;width:54px;text-align:right"><span id="bpm-${idx}">90</span> bpm</span></div>
+    </div>`;
+  }).join("");
+}
+let patTempo=PATTERNS.map(()=>90);
+function togglePattern(idx){
+  const p=PATTERNS[idx];
+  const playingThis=(seq.id==="pat:"+idx);
+  document.querySelectorAll('[id^="patbtn-"]').forEach(b=>{b.classList.remove("playing");b.innerHTML=PLAY_SVG;});
+  document.querySelectorAll(".beat.hit").forEach(b=>b.classList.remove("hit"));
+  if(playingThis){seqStop();return;}
+  const btn=document.getElementById("patbtn-"+idx); btn.classList.add("playing"); btn.innerHTML=STOP_SVG;
+  const steps=p.steps.map(d=>({dir:d,chord:selectedStrumChord}));
+  seqStart("pat:"+idx, steps, patTempo[idx], (i)=>{
+    document.querySelectorAll(`.beat[data-p="${idx}"]`).forEach(b=>b.classList.remove("hit"));
+    if(i>=0){const c=document.querySelector(`.beat[data-p="${idx}"][data-i="${i}"]`);if(c)c.classList.add("hit");}
+  });
+}
+function goPattern(id){
+  switchTab("strum");
+  const elp=document.getElementById("pat-"+id);
+  if(elp){elp.scrollIntoView({behavior:"smooth",block:"center"});elp.style.transition="box-shadow .3s";elp.style.boxShadow="0 0 0 2px var(--red)";setTimeout(()=>elp.style.boxShadow="",1200);}
+}
+
+/* ============ RENDER: PRACTICE ============ */
+function renderPractice(){
+  const done=Object.values(practiceDone).filter(Boolean).length;
+  document.getElementById("progText").textContent=done+" of 21 days";
+  document.getElementById("progBar").style.width=(done/21*100)+"%";
+  let todayIdx=-1; for(let d=1;d<=21;d++){if(!practiceDone[d]){todayIdx=d;break;}}
+  const tb=document.getElementById("todayBox");
+  if(todayIdx>0){const t=PRACTICE[todayIdx-1];
+    tb.innerHTML=`<div class="card today"><div class="k" style="color:var(--red);font-weight:700;font-size:11px;letter-spacing:.08em;text-transform:uppercase">Day ${todayIdx} &middot; today's focus</div>
+    <div style="font-family:var(--serif);font-size:20px;margin:3px 0 2px">${t[0]}</div>
+    <div style="color:var(--muted);font-size:13.5px;line-height:1.45">${t[1]}</div></div>`;
+  } else { tb.innerHTML=`<div class="card today" style="text-align:center"><div style="font-family:var(--serif);font-size:22px;color:var(--green)">All 21 days done. You made it. &#127881;</div></div>`; }
+  const weeks=[["Week 1","Your first two chords and first songs",0,7],["Week 2","The fourth chord and your full catalog",7,14],["Week 3","Performance ready",14,21]];
+  document.getElementById("practiceList").innerHTML=weeks.map(([wl,ws,a,b])=>{
+    let h=`<div class="weeklbl">${wl} <span style="font-family:var(--sans);font-size:12px;color:var(--muted);font-weight:400">${ws}</span></div>`;
+    for(let d=a+1;d<=b;d++){const t=PRACTICE[d-1];const done=!!practiceDone[d];
+      h+=`<div class="day ${done?'done':''}" onclick="toggleDay(${d})"><div class="num">${d}</div>
+        <div style="flex:1"><div class="focus">${t[0]}</div><div class="what">${t[1]}</div></div>
+        <div class="check">${done?'&#10003;':''}</div></div>`;}
+    return h;
+  }).join("");
+}
+function toggleDay(d){practiceDone[d]=!practiceDone[d];LS.set("ccf_practice",practiceDone);renderPractice();}
+function resetPractice(){practiceDone={};LS.set("ccf_practice",practiceDone);renderPractice();toast("Tracker reset");}
+
+/* ============ RENDER: FINGERS ============ */
+function renderFinger(){
+  document.getElementById("fingerAcc").innerHTML=FINGER.map((f,i)=>`<div class="acc ${f.open?'open':''}" id="acc-${i}">
+    <button onclick="document.getElementById('acc-${i}').classList.toggle('open')">${f.q}<span class="chev">&#9662;</span></button>
+    <div class="body">${f.html}</div></div>`).join("");
+}
+let timerTotal=15*60, timerLeft=15*60, timerOn=false, timerH=null;
+function fmt(s){const m=Math.floor(s/60),x=s%60;return m+":"+String(x).padStart(2,"0");}
+function setTimer(min){timerTotal=min*60;timerLeft=timerTotal;stopTimer();document.getElementById("clock").textContent=fmt(timerLeft);}
+function toggleTimer(){timerOn?stopTimer():startTimer();}
+function startTimer(){ensureAudio();timerOn=true;document.getElementById("timerBtn").textContent="Pause";
+  timerH=setInterval(()=>{timerLeft--;document.getElementById("clock").textContent=fmt(Math.max(0,timerLeft));
+    if(timerLeft<=0){stopTimer();timerLeft=timerTotal;document.getElementById("clock").textContent=fmt(timerLeft);beep();toast("Time. Put the guitar down. ✓");}},1000);}
+function stopTimer(){timerOn=false;if(timerH)clearInterval(timerH);document.getElementById("timerBtn").textContent="Start";}
+function beep(){ensureAudio();const t=ctx.currentTime;[660,880].forEach((f,i)=>{const o=ctx.createOscillator();o.type="sine";o.frequency.value=f;const g=ctx.createGain();g.gain.setValueAtTime(0,t+i*0.18);g.gain.linearRampToValueAtTime(0.2,t+i*0.18+0.02);g.gain.exponentialRampToValueAtTime(0.001,t+i*0.18+0.16);o.connect(g).connect(master);o.start(t+i*0.18);o.stop(t+i*0.18+0.18);});}
+
+/* ============ RENDER: CAMPFIRE ============ */
+function renderCampfire(){
+  let n=0; CAMPFIRE.forEach((grp,gi)=>grp.items.forEach((_,ii)=>{if(campfireDone[gi+"-"+ii])n++;}));
+  const v=document.getElementById("verdict");
+  let cls,big,sub;
+  if(n>=19){cls="ready";big="Campfire ready";sub="Pick up your guitar and play for people. You have earned it.";}
+  else if(n>=15){cls="almost";big="Almost there";sub="Focus your practice on the unchecked items for a few more days.";}
+  else{cls="keep";big="Keep going";sub="You are closer than you think. Give the weak spots another week, then check again.";}
+  v.className="verdict "+cls;
+  v.innerHTML=`<div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">${n} of 19 checked</div><div class="big">${big}</div><div style="font-size:13.5px;color:#444;margin-top:4px;line-height:1.45">${sub}</div>`;
+  document.getElementById("checklist").innerHTML=CAMPFIRE.map((grp,gi)=>{
+    let h=`<div class="grouplbl">${grp.g}</div><div class="cklist">`;
+    grp.items.forEach((it,ii)=>{const id=gi+"-"+ii;const on=!!campfireDone[id];
+      h+=`<label class="${on?'on':''}"><input type="checkbox" ${on?'checked':''} onchange="toggleCk('${id}')"><span>${it}</span></label>`;});
+    return h+"</div>";
+  }).join("");
+}
+function toggleCk(id){campfireDone[id]=!campfireDone[id];LS.set("ccf_campfire",campfireDone);renderCampfire();}
+
+/* ============ SONGBOOK ============ */
+function parseSheet(body){
+  const secs=[]; let cur={label:null,lines:[]};
+  (body||"").split(/\r?\n/).forEach(line=>{
+    const sm=line.match(/^\s*\{\s*(?:c:|comment:)?\s*([^}]*?)\s*\}\s*$/i);
+    if(sm){ if(cur.label!==null||cur.lines.length) secs.push(cur); cur={label:sm[1],lines:[]}; return; }
+    if(line.trim()===""){ cur.lines.push(null); return; }
+    const segs=[]; let chord=null, buf="";
+    for(let i=0;i<line.length;){
+      if(line[i]==="["){ const e=line.indexOf("]",i); if(e>i){ segs.push({chord:chord,text:buf}); buf=""; chord=line.slice(i+1,e); i=e+1; continue; } }
+      buf+=line[i++];
+    }
+    segs.push({chord:chord,text:buf});
+    cur.lines.push(segs);
+  });
+  if(cur.label!==null||cur.lines.length) secs.push(cur);
+  return secs;
+}
+function transposeChord(ch,n){ if(!n) return ch; const m=ch.match(/^([A-G])([#b]?)(.*)$/); if(!m) return ch; let root=m[1]+(m[2]||""); if(SB_FLATS[root])root=SB_FLATS[root]; let i=SB_SCALE.indexOf(root); if(i<0) return ch; i=(i+n+120)%12; return SB_SCALE[i]+(m[3]||""); }
+function chordNoteFreqs(name){ const m=name.match(/^([A-G][#b]?)(.*)$/); if(!m) return []; let root=m[1]; if(SB_FLATS[root])root=SB_FLATS[root]; const suf=m[2]||""; let ri=SB_SCALE.indexOf(root); if(ri<0) return []; const base=130.81*Math.pow(2,ri/12); let ints=[0,4,7]; if(/^m(?!aj)/i.test(suf)) ints=[0,3,7]; if(/dim/i.test(suf)) ints=[0,3,6]; if(/sus2/i.test(suf)) ints=[0,2,7]; if(/sus4/i.test(suf)) ints=[0,5,7]; if(/7/.test(suf)) ints=ints.concat(/maj7/i.test(suf)?11:10); return ints.map(iv=>base*Math.pow(2,iv/12)).concat(base*2); }
+function playChordName(name){ ensureAudio(); const t=ctx.currentTime; chordNoteFreqs(name).forEach((f,i)=>pluck(f,t+i*0.013,0.9)); }
+
+function renderSongbook(){
+  const el=document.getElementById("sbList"); if(!el) return;
+  let h='<div class="sbsectlbl">Ready to play (public domain)</div>';
+  SB_SONGS.forEach((s,i)=>{ h+='<button class="sbcard" onclick="openPD('+i+')"><div><div class="t">'+esc(s.title)+'</div><div class="a">'+esc(s.author||"")+'</div></div><span class="k">'+esc(s.key||"")+'</span></button>'; });
+  el.innerHTML=h;
+}
+function openPD(i){ openSheet("pd",i); }
+function openMy(i){ openSheet("my",i); }
+function sbSong(){ return sbState.kind==="pd"? SB_SONGS[sbState.idx] : mySongs[sbState.idx]; }
+function sbBack(){ if(sbState.timer)clearInterval(sbState.timer); sbState={view:"list"}; document.getElementById("sbSheet").style.display="none"; document.getElementById("sbListWrap").style.display="block"; }
+function openSheet(kind,idx){
+  sbState={view:"sheet",kind:kind,idx:idx,transpose:0,capo:0,font:16,scroll:false,timer:null,speed:2};
+  document.getElementById("sbListWrap").style.display="none";
+  document.getElementById("sbSheet").style.display="block";
+  renderSheet(); window.scrollTo({top:0,behavior:"instant"});
+}
+function renderSheet(){
+  const s=sbSong(); if(!s){ sbBack(); return; }
+  const ug="https://www.google.com/search?q="+encodeURIComponent(s.title+" chords ultimate guitar");
+  const yt="https://www.youtube.com/results?search_query="+encodeURIComponent(s.title+" guitar tutorial");
+  const del = sbState.kind==="my" ? '<button class="tool" style="color:var(--red)" onclick="deleteMySong()">Delete</button>' : "";
+  document.getElementById("sbSheet").innerHTML =
+    '<div class="sheettop">'
+    +'<button class="btn ghost" style="padding:7px 11px;font-size:13px" onclick="sbBack()">&#8592; Songbook</button>'
+    +'<div style="font-family:var(--serif);font-size:22px;margin:8px 0 0">'+esc(s.title)+'</div>'
+    +'<div style="color:var(--muted);font-size:12.5px">'+esc(s.author||"")+' &middot; Key of '+esc(s.key||"")+'</div>'
+    +'<div class="sheettools">'
+      +'<span class="tool">Key <button onclick="sbTranspose(-1)">&#8722;</button><b id="sbTr">0</b><button onclick="sbTranspose(1)">+</button></span>'
+      +'<span class="tool">Capo <button onclick="sbCapo(-1)">&#8722;</button><b id="sbCp">0</b><button onclick="sbCapo(1)">+</button></span>'
+      +'<span class="tool">Size <button onclick="sbFont(-1)">&#8722;</button><button onclick="sbFont(1)">+</button></span>'
+      +'<button class="tool" id="sbScroll" onclick="sbScrollToggle()">&#9654; Auto-scroll</button>'+del
+    +'</div>'
+    +'<div class="sheettools"><a class="lyriclink" href="'+ug+'" target="_blank" rel="noopener">More versions &#8599;</a> <a class="lyriclink" href="'+yt+'" target="_blank" rel="noopener">YouTube &#8599;</a></div>'
+    +'</div>'
+    +'<div id="sbCapoBanner"></div>'
+    +'<div class="sheet" id="sheetBody" style="font-size:'+sbState.font+'px"></div>';
+  renderSheetBody();
+}
+function renderSheetBody(){
+  const s=sbSong(); if(!s) return; const t=sbState.transpose - sbState.capo;
+  let html="";
+  parseSheet(s.body).forEach(sec=>{
+    html+='<div class="sec">';
+    if(sec.label) html+='<div class="seclbl">'+esc(sec.label)+'</div>';
+    sec.lines.forEach(ln=>{
+      if(ln===null){ html+='<div class="blank"></div>'; return; }
+      html+='<div class="ln">'+ln.map(seg=>{
+        const ch=seg.chord?transposeChord(seg.chord,t):null;
+        const c=ch?'<button class="chip-ch" data-ch="'+esc(ch)+'" onclick="showChordPopEl(this)">'+esc(ch)+'</button>':'<span class="chip-ch empty">.</span>';
+        return '<span class="seg"><span class="segch">'+c+'</span>'+esc(seg.text)+'</span>';
+      }).join("")+'</div>';
+    });
+    html+='</div>';
+  });
+  document.getElementById("sheetBody").innerHTML=html;
+  document.getElementById("sbCapoBanner").innerHTML = sbState.capo>0 ? '<div class="sbnote" style="border-color:#f3cfcf;background:#fff6f5;color:var(--red);font-weight:600">Put a capo on fret '+sbState.capo+', then play these shapes.</div>' : "";
+  const tr=document.getElementById("sbTr"); if(tr) tr.textContent=(sbState.transpose>0?"+":"")+sbState.transpose;
+  const cp=document.getElementById("sbCp"); if(cp) cp.textContent=sbState.capo;
+}
+function sbTranspose(d){ sbState.transpose=Math.max(-6,Math.min(6,sbState.transpose+d)); renderSheetBody(); }
+function sbCapo(d){ sbState.capo=Math.max(0,Math.min(7,sbState.capo+d)); renderSheetBody(); }
+function sbFont(d){ sbState.font=Math.max(12,Math.min(28,sbState.font+d)); document.getElementById("sheetBody").style.fontSize=sbState.font+"px"; }
+function sbScrollToggle(){ sbState.scroll=!sbState.scroll; const b=document.getElementById("sbScroll"); if(sbState.scroll){ b.innerHTML="&#10073;&#10073; Stop"; sbState.timer=setInterval(()=>{ window.scrollBy(0,1); },30); } else { b.innerHTML="&#9654; Auto-scroll"; clearInterval(sbState.timer); } }
+function showChordPopEl(el){ showChordPop(el.getAttribute("data-ch")); }
+function showChordPop(name){
+  sbPopChord=name;
+  let pop=document.getElementById("sbPop");
+  if(!pop){ pop=document.createElement("div"); pop.id="sbPop"; pop.className="sbpop"; pop.addEventListener("click",e=>{ if(e.target===pop) closeChordPop(); }); document.body.appendChild(pop); }
+  const shape=sbShape(name);
+  const dia = shape ? chordSVG(shape) : '<div class="sbnote">Moveable/barre shape. Use the pattern shown for its open cousin, moved up the neck.</div>';
+  pop.innerHTML='<div class="card"><h3>'+esc(name)+'</h3>'+dia+'<div style="margin-top:6px"><button class="btn" onclick="playChordName(sbPopChord)">Hear it</button> <button class="btn ghost" onclick="closeChordPop()">Close</button></div></div>';
+  pop.classList.add("show");
+}
+function closeChordPop(){ const pop=document.getElementById("sbPop"); if(pop) pop.classList.remove("show"); }
+function openAddSong(){
+  document.getElementById("sbListWrap").style.display="none";
+  const sh=document.getElementById("sbSheet"); sh.style.display="block";
+  sh.innerHTML='<div class="sheettop"><button class="btn ghost" style="padding:7px 11px;font-size:13px" onclick="sbBack()">&#8592; Songbook</button><div style="font-family:var(--serif);font-size:22px;margin:8px 0 0">Add your own song</div></div>'
+   +'<div class="card"><p style="font-size:13px;color:var(--muted);margin:0 0 10px;line-height:1.5">Put chords in square brackets, right before the word they land on. Everything saves privately to your account.</p>'
+   +'<input id="myTitle" class="search" placeholder="Song title" style="margin-bottom:8px">'
+   +'<input id="myKey" class="search" placeholder="Key, optional (e.g. G)" style="margin-bottom:8px">'
+   +'<textarea id="myBody" class="search" style="height:220px;font-family:monospace;line-height:1.6;resize:vertical" placeholder="[G]This is how you [C]type a line&#10;[G]Chord in brackets, [D]then the words"></textarea>'
+   +'<div style="margin-top:10px"><button class="btn" onclick="saveMySong()">Save song</button> <button class="btn ghost" onclick="sbBack()">Cancel</button></div>'
+   +'<div class="sbnote">Your content, your responsibility. It stays private to your account and never shows to other users. Remove it any time with Delete.</div></div>';
+  window.scrollTo({top:0,behavior:"instant"});
+}
+function saveMySong(){
+  const title=(document.getElementById("myTitle").value||"").trim();
+  const body=(document.getElementById("myBody").value||"").trim();
+  const key=(document.getElementById("myKey").value||"").trim();
+  if(!title||!body){ toast("Add a title and the song"); return; }
+  mySongs.push({id:"s"+Date.now(), title:title, author:"My song", key:key, body:body}); LS.set("ccf_mysongs",mySongs);
+  renderSongbook(); toast("Song saved \u2713"); openSheet("my", mySongs.length-1);
+}
+function deleteMySong(){ if(sbState.kind!=="my")return; mySongs.splice(sbState.idx,1); LS.set("ccf_mysongs",mySongs); renderSongbook(); sbBack(); toast("Song removed"); }
+
+/* ============ NAV ============ */
+const TABS=[
+ {id:"chords",label:"Chords",icon:`<path d="M6 3v13.5a3 3 0 1 0 2 2.8V8h9V5H8V3z"/>`},
+ {id:"songs",label:"Songs",icon:`<path d="M4 6h13v2H4zm0 5h13v2H4zm0 5h9v2H4zM19 5v8.2a2.6 2.6 0 1 0 1.6 2.4V5z"/>`},
+ {id:"songbook",label:"Songbook",icon:`<path d="M4 4h7a2 2 0 0 1 2 2v13a2 2 0 0 0-2-1.5H4zM20 4h-7a2 2 0 0 0-2 2v13a2 2 0 0 1 2-1.5h7z"/>`},
+ {id:"strum",label:"Strum",icon:`<path d="M4 7h2v10H4zm4 2h2v6H8zm4-3h2v12h-2zm4 4h2v4h-2zm4-2h2v8h-2z"/>`},
+ {id:"practice",label:"Practice",icon:`<path d="M19 3h-4.2A3 3 0 0 0 9.2 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm-7 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm-1.3 14.7l-3-3 1.4-1.4 1.6 1.6 3.9-3.9 1.4 1.4z"/>`},
+ {id:"fingers",label:"Fingers",icon:`<path d="M9 11V4.5a1.5 1.5 0 0 1 3 0V10h1V2.5a1.5 1.5 0 0 1 3 0V11l2 1v6a4 4 0 0 1-4 4h-3a5 5 0 0 1-4.5-2.8L4 14s1-1.4 2.6-.6L8 14V5.5a1.5 1.5 0 0 1 3 0"/>`},
+ {id:"ready",label:"Ready",icon:`<path d="M12 2l2.2 5.5L20 8l-4 4 1 6-5-2.8L7 18l1-6-4-4 5.8-.5z"/>`}
+];
+function renderNav(){
+  document.getElementById("nav").innerHTML=TABS.map(t=>
+    `<button id="nav-${t.id}" onclick="switchTab('${t.id}')"><svg viewBox="0 0 24 24" fill="currentColor">${t.icon}</svg><span>${t.label}</span></button>`).join("");
+}
+function switchTab(id){
+  seqStop(); if(sbState&&sbState.timer){clearInterval(sbState.timer);sbState.scroll=false;} document.querySelectorAll(".play.playing,[id^='patbtn-'].playing").forEach(b=>{b.classList.remove("playing");b.innerHTML=PLAY_SVG;});
+  document.querySelectorAll(".tab").forEach(s=>s.classList.remove("active"));
+  document.getElementById("t-"+id).classList.add("active");
+  TABS.forEach(t=>document.getElementById("nav-"+t.id).classList.toggle("on",t.id===id));
+  window.scrollTo({top:0,behavior:"instant"});
+}
+
+/* ============ SUPABASE SYNC (optional login) ============ */
+/* PASTE YOUR TWO SUPABASE VALUES BELOW. Until you do, login stays hidden and the app works as normal. */
+const SUPABASE_URL="https://xoyatbnihfnbovnstewu.supabase.co";
+const SUPABASE_ANON_KEY="sb_publishable_GYbkCWBZGaTBjsRzyVhwgA_xPHX-jPD";
+const SYNC_ON = SUPABASE_URL.indexOf("__")<0 && SUPABASE_ANON_KEY.indexOf("__")<0 && !!(window.supabase && window.supabase.createClient);
+let sb=null, sbUser=null, syncTimer=null, pendingEmail="";
+
+function gatherProgress(){return {practice:practiceDone, campfire:campfireDone, setlist:setlist, mysongs:mySongs};}
+function applyProgress(pr){ if(!pr)return;
+  if(pr.practice)practiceDone=pr.practice;
+  if(pr.campfire)campfireDone=pr.campfire;
+  if(Array.isArray(pr.setlist))setlist=pr.setlist;
+  if(Array.isArray(pr.mysongs))mySongs=pr.mysongs;
+  LS.set("ccf_practice",practiceDone); LS.set("ccf_campfire",campfireDone); LS.set("ccf_setlist",setlist); LS.set("ccf_mysongs",mySongs);
+}
+function mergeProgress(a,b){
+  const m={setlist:Array.from(new Set([...(a.setlist||[]),...(b.setlist||[])]))};
+  const _ms={}; [...(a.mysongs||[]),...(b.mysongs||[])].forEach(s=>{_ms[s.id]=s;}); m.mysongs=Object.values(_ms);
+  ["practice","campfire"].forEach(k=>{const o={}; const src=Object.assign({},a[k],b[k]);
+    Object.keys(src).forEach(key=>{o[key]=!!((a[k]&&a[k][key])||(b[k]&&b[k][key]));}); m[k]=o;});
+  return m;
+}
+function reRenderAll(){ renderSongs(); renderFilterChips(); renderPractice(); renderCampfire(); renderSongbook(); }
+function onLocalWrite(k){ if(SYNC_ON && sbUser) scheduleSync(); }
+function scheduleSync(){ if(syncTimer)clearTimeout(syncTimer); syncTimer=setTimeout(pushProgress,1200); }
+async function pushProgress(){ if(!SYNC_ON||!sbUser)return;
+  try{ await sb.from("progress").upsert({user_id:sbUser.id, data:gatherProgress(), updated_at:new Date().toISOString()},{onConflict:"user_id"}); }catch(e){}
+}
+async function pullAndMerge(){ if(!SYNC_ON||!sbUser)return;
+  try{ const {data}=await sb.from("progress").select("data").eq("user_id",sbUser.id).maybeSingle();
+    const remote=(data&&data.data)?data.data:{practice:{},campfire:{},setlist:[]};
+    applyProgress(mergeProgress(remote, gatherProgress())); reRenderAll(); await pushProgress();
+  }catch(e){}
+}
+function initSupabase(){
+  if(!SYNC_ON){ const b=document.getElementById("acctBtn"); if(b)b.style.display="none"; return; }
+  showGate();
+  try{ sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+    sb.auth.getSession().then(({data})=>{ sbUser=data.session?data.session.user:null; renderAcct(); enforceGate(); if(sbUser)pullAndMerge(); });
+    sb.auth.onAuthStateChange((_e,session)=>{ sbUser=session?session.user:null; renderAcct(); enforceGate(); if(sbUser)pullAndMerge(); });
+  }catch(e){ const b=document.getElementById("acctBtn"); if(b)b.style.display="none"; }
+}
+function openAcct(){ document.getElementById("acctModal").classList.add("show"); renderAcct(); }
+function closeAcct(){ document.getElementById("acctModal").classList.remove("show"); }
+function renderAcct(){
+  const body=document.getElementById("acctBody"); if(!body)return;
+  const btn=document.getElementById("acctBtn");
+  if(sbUser){ if(btn)btn.classList.add("in");
+    body.innerHTML='<p>Signed in as <b>'+esc(sbUser.email||"")+'</b>. Your tracker, checklist and setlist now sync to any device you sign in on.</p><button class="btn ghost" onclick="signOut()">Sign out</button>';
+  } else { if(btn)btn.classList.remove("in");
+    body.innerHTML='<p>Save your progress and pick up on any device. Pop in your email and we\'ll send a 6-digit code. No password to remember.</p>'+
+      '<input id="acctEmail" class="search" type="email" autocomplete="email" placeholder="you@email.com" style="margin-bottom:10px">'+
+      '<button class="btn" id="sendBtn" onclick="sendCode()" style="width:100%;justify-content:center">Send me a code</button>'+
+      '<div id="codeArea"></div>';
+  }
+}
+async function sendCode(){
+  const em=(document.getElementById("acctEmail").value||"").trim();
+  if(!em||em.indexOf("@")<0){ toast("Enter your email"); return; }
+  pendingEmail=em; const b=document.getElementById("sendBtn"); b.textContent="Sending..."; b.disabled=true;
+  try{ const {error}=await sb.auth.signInWithOtp({email:em}); if(error)throw error;
+    document.getElementById("codeArea").innerHTML='<p style="margin-top:14px">We sent a code to <b>'+esc(em)+'</b>. Enter it below.</p>'+
+      '<input id="acctCode" class="search" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code" style="margin-bottom:10px">'+
+      '<button class="btn" onclick="verifyCode()" style="width:100%;justify-content:center">Verify and sign in</button>';
+  }catch(e){ toast("Could not send code, try again"); b.textContent="Send me a code"; b.disabled=false; }
+}
+async function verifyCode(){
+  const code=(document.getElementById("acctCode").value||"").trim();
+  if(!code){ toast("Enter the code"); return; }
+  try{ const {error}=await sb.auth.verifyOtp({email:pendingEmail, token:code, type:"email"}); if(error)throw error;
+    toast("Signed in ✓"); closeAcct();
+  }catch(e){ toast("Wrong or expired code"); }
+}
+async function signOut(){ try{ await sb.auth.signOut(); }catch(e){} sbUser=null; renderAcct(); toast("Signed out"); }
+
+function showGate(){ const g=document.getElementById("loginGate"); if(g){ g.style.display="flex"; if(!g.dataset.init){ renderGate(); g.dataset.init="1"; } } }
+function hideGate(){ const g=document.getElementById("loginGate"); if(g) g.style.display="none"; }
+function enforceGate(){ if(!SYNC_ON) return; if(sbUser) hideGate(); else showGate(); }
+function renderGate(){
+  const b=document.getElementById("gateBody"); if(!b)return;
+  b.innerHTML='<input id="gateEmail" class="search" type="email" autocomplete="email" placeholder="you@email.com" style="margin-bottom:10px">'+
+    '<button class="btn" id="gateSend" onclick="gateSendCode()" style="width:100%;justify-content:center">Send me a code</button>'+
+    '<div id="gateCodeArea"></div>';
+}
+async function gateSendCode(){
+  const em=(document.getElementById("gateEmail").value||"").trim();
+  if(!em||em.indexOf("@")<0){ toast("Enter your email"); return; }
+  pendingEmail=em; const b=document.getElementById("gateSend"); b.textContent="Sending..."; b.disabled=true;
+  try{ const {error}=await sb.auth.signInWithOtp({email:em}); if(error)throw error;
+    document.getElementById("gateCodeArea").innerHTML='<p style="margin-top:14px;font-size:13.5px;color:#33302c">We sent a code to <b>'+esc(em)+'</b>. Enter it below.</p>'+
+      '<input id="gateCode" class="search" inputmode="numeric" autocomplete="one-time-code" placeholder="Enter your code" style="margin-bottom:10px">'+
+      '<button class="btn" onclick="gateVerify()" style="width:100%;justify-content:center">Verify and sign in</button>';
+  }catch(e){ toast("Could not send code, try again"); b.textContent="Send me a code"; b.disabled=false; }
+}
+async function gateVerify(){
+  const code=(document.getElementById("gateCode").value||"").trim(); if(!code){ toast("Enter the code"); return; }
+  try{ const {error}=await sb.auth.verifyOtp({email:pendingEmail, token:code, type:"email"}); if(error)throw error; toast("Signed in ✓"); }
+  catch(e){ toast("Wrong or expired code"); }
+}
+
+/* ============ INIT ============ */
+document.getElementById("search").addEventListener("input",e=>{songFilter.q=e.target.value;renderSongs();});
+renderNav(); renderChords(); renderGenreChips(); renderFilterChips(); renderSongs();
+renderStrumChord(); renderPatterns(); renderPractice(); renderFinger(); renderCampfire(); renderSongbook();
+initSupabase();
+if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));}
+</script>
+</body>
+</html>
