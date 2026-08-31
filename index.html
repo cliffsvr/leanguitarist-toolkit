@@ -205,7 +205,8 @@ nav button.on{color:var(--red)}
 .sbpop svg{width:120px;height:auto;margin:6px 0}
 .sbnote{font-size:12px;color:var(--muted);line-height:1.5;background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:10px}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Pinned: sb_publishable_ keys require supabase-js >= 2.111.0. Do not float this to @2. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.4/dist/umd/supabase.js"></script>
 </head>
 <body>
 <header><div class="wrap">
@@ -883,10 +884,30 @@ async function pullAndMerge(){ if(!SYNC_ON||!sbUser)return;
 function initSupabase(){
   if(!SYNC_ON){ const b=document.getElementById("acctBtn"); if(b)b.style.display="none"; return; }
   showGate();
-  try{ sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-    sb.auth.getSession().then(({data})=>{ sbUser=data.session?data.session.user:null; renderAcct(); enforceGate(); if(sbUser)pullAndMerge(); });
+  try{ sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{
+      persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, flowType:"implicit"
+    }});
+    sb.auth.getSession().then(({data})=>{ sbUser=data.session?data.session.user:null; renderAcct(); enforceGate(); if(sbUser)pullAndMerge(); })
+      .catch(err=>{ console.error("[auth] getSession failed",err); enforceGate(); });
     sb.auth.onAuthStateChange((_e,session)=>{ sbUser=session?session.user:null; renderAcct(); enforceGate(); if(sbUser)pullAndMerge(); });
-  }catch(e){ const b=document.getElementById("acctBtn"); if(b)b.style.display="none"; }
+  }catch(e){
+    console.error("[auth] createClient failed",e);
+    const b=document.getElementById("acctBtn"); if(b)b.style.display="none";
+    sb=null; showGateError("Sign-in is temporarily unavailable. Please reload the page.");
+  }
+}
+/* Replaces the gate form when sign-in cannot work at all, so people get a real
+   message instead of a button that silently fails. */
+function showGateError(msg){
+  const b=document.getElementById("gateBody"); if(!b)return;
+  b.innerHTML='<p style="font-size:13.5px;line-height:1.5;color:#b00">'+esc(msg)+'</p>';
+}
+/* Surfaces the real reason a sign-in step failed (rate limit, mail delivery,
+   rejected key) instead of collapsing everything into one generic message. */
+function authErr(e,fallback){
+  console.error("[auth]",e);
+  const m=e&&(e.message||e.error_description||e.error);
+  return m?String(m):fallback;
 }
 function openAcct(){ document.getElementById("acctModal").classList.add("show"); renderAcct(); }
 function closeAcct(){ document.getElementById("acctModal").classList.remove("show"); }
@@ -905,19 +926,32 @@ function renderAcct(){
 async function sendCode(){
   const em=(document.getElementById("acctEmail").value||"").trim();
   if(!em||em.indexOf("@")<0){ toast("Enter your email"); return; }
+  if(!sb){ toast("Sign-in unavailable, please reload"); return; }
   pendingEmail=em; const b=document.getElementById("sendBtn"); b.textContent="Sending..."; b.disabled=true;
-  try{ const {error}=await sb.auth.signInWithOtp({email:em}); if(error)throw error;
+  try{ const {error}=await sb.auth.signInWithOtp({email:em,options:{emailRedirectTo:window.location.origin+window.location.pathname}}); if(error)throw error;
     document.getElementById("codeArea").innerHTML='<p style="margin-top:14px">We sent a code to <b>'+esc(em)+'</b>. Enter it below.</p>'+
       '<input id="acctCode" class="search" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code" style="margin-bottom:10px">'+
       '<button class="btn" onclick="verifyCode()" style="width:100%;justify-content:center">Verify and sign in</button>';
-  }catch(e){ toast("Could not send code, try again"); b.textContent="Send me a code"; b.disabled=false; }
+  }catch(e){ toast(authErr(e,"Could not send code, try again")); b.textContent="Send me a code"; b.disabled=false; }
+}
+/* A code minted by the Magic Link template verifies as type "magiclink", one
+   from the OTP template as "email". Try both so either template works. */
+async function verifyOtpToken(code){
+  let last=null;
+  for(const type of ["email","magiclink"]){
+    const {error}=await sb.auth.verifyOtp({email:pendingEmail, token:code, type:type});
+    if(!error) return;
+    last=error;
+  }
+  throw last;
 }
 async function verifyCode(){
-  const code=(document.getElementById("acctCode").value||"").trim();
+  const code=(document.getElementById("acctCode").value||"").replace(/\s+/g,"");
   if(!code){ toast("Enter the code"); return; }
-  try{ const {error}=await sb.auth.verifyOtp({email:pendingEmail, token:code, type:"email"}); if(error)throw error;
+  if(!sb){ toast("Sign-in unavailable, please reload"); return; }
+  try{ await verifyOtpToken(code);
     toast("Signed in ✓"); closeAcct();
-  }catch(e){ toast("Wrong or expired code"); }
+  }catch(e){ toast(authErr(e,"Wrong or expired code")); }
 }
 async function signOut(){ try{ await sb.auth.signOut(); }catch(e){} sbUser=null; renderAcct(); toast("Signed out"); }
 
@@ -933,17 +967,19 @@ function renderGate(){
 async function gateSendCode(){
   const em=(document.getElementById("gateEmail").value||"").trim();
   if(!em||em.indexOf("@")<0){ toast("Enter your email"); return; }
+  if(!sb){ toast("Sign-in unavailable, please reload"); return; }
   pendingEmail=em; const b=document.getElementById("gateSend"); b.textContent="Sending..."; b.disabled=true;
-  try{ const {error}=await sb.auth.signInWithOtp({email:em}); if(error)throw error;
+  try{ const {error}=await sb.auth.signInWithOtp({email:em,options:{emailRedirectTo:window.location.origin+window.location.pathname}}); if(error)throw error;
     document.getElementById("gateCodeArea").innerHTML='<p style="margin-top:14px;font-size:13.5px;color:#33302c">We sent a code to <b>'+esc(em)+'</b>. Enter it below.</p>'+
       '<input id="gateCode" class="search" inputmode="numeric" autocomplete="one-time-code" placeholder="Enter your code" style="margin-bottom:10px">'+
       '<button class="btn" onclick="gateVerify()" style="width:100%;justify-content:center">Verify and sign in</button>';
-  }catch(e){ toast("Could not send code, try again"); b.textContent="Send me a code"; b.disabled=false; }
+  }catch(e){ toast(authErr(e,"Could not send code, try again")); b.textContent="Send me a code"; b.disabled=false; }
 }
 async function gateVerify(){
-  const code=(document.getElementById("gateCode").value||"").trim(); if(!code){ toast("Enter the code"); return; }
-  try{ const {error}=await sb.auth.verifyOtp({email:pendingEmail, token:code, type:"email"}); if(error)throw error; toast("Signed in ✓"); }
-  catch(e){ toast("Wrong or expired code"); }
+  const code=(document.getElementById("gateCode").value||"").replace(/\s+/g,""); if(!code){ toast("Enter the code"); return; }
+  if(!sb){ toast("Sign-in unavailable, please reload"); return; }
+  try{ await verifyOtpToken(code); toast("Signed in ✓"); }
+  catch(e){ toast(authErr(e,"Wrong or expired code")); }
 }
 
 /* ============ INIT ============ */
