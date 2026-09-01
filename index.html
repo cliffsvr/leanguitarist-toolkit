@@ -852,6 +852,12 @@ function switchTab(id){
 const SUPABASE_URL="https://xoyatbnihfnbovnstewu.supabase.co";
 const SUPABASE_ANON_KEY="sb_publishable_GYbkCWBZGaTBjsRzyVhwgA_xPHX-jPD";
 const SYNC_ON = SUPABASE_URL.indexOf("__")<0 && SUPABASE_ANON_KEY.indexOf("__")<0 && !!(window.supabase && window.supabase.createClient);
+/* EMAIL GATE SWITCH.
+   false = the toolkit opens straight away for everyone (current setting).
+   true  = visitors must sign in with a 6-digit email code before anything shows.
+   Turning this back on also needs the Supabase project running and custom SMTP set up. */
+const GATE_ON = false;
+
 let sb=null, sbUser=null, syncTimer=null, pendingEmail="";
 
 function gatherProgress(){return {practice:practiceDone, campfire:campfireDone, setlist:setlist, mysongs:mySongs};}
@@ -882,6 +888,7 @@ async function pullAndMerge(){ if(!SYNC_ON||!sbUser)return;
   }catch(e){}
 }
 function initSupabase(){
+  if(!GATE_ON){ hideGate(); const _b=document.getElementById("acctBtn"); if(_b)_b.style.display="none"; return; }
   if(!SYNC_ON){ const b=document.getElementById("acctBtn"); if(b)b.style.display="none"; return; }
   showGate();
   try{ sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{
@@ -957,7 +964,7 @@ async function signOut(){ try{ await sb.auth.signOut(); }catch(e){} sbUser=null;
 
 function showGate(){ const g=document.getElementById("loginGate"); if(g){ g.style.display="flex"; if(!g.dataset.init){ renderGate(); g.dataset.init="1"; } } }
 function hideGate(){ const g=document.getElementById("loginGate"); if(g) g.style.display="none"; }
-function enforceGate(){ if(!SYNC_ON) return; if(sbUser) hideGate(); else showGate(); }
+function enforceGate(){ if(!GATE_ON){ hideGate(); return; } if(!SYNC_ON) return; if(sbUser) hideGate(); else showGate(); }
 function renderGate(){
   const b=document.getElementById("gateBody"); if(!b)return;
   b.innerHTML='<input id="gateEmail" class="search" type="email" autocomplete="email" placeholder="you@email.com" style="margin-bottom:10px">'+
